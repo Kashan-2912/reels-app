@@ -16,7 +16,7 @@ async function registerUser(req, res) {
     const newUser = await userModel.create({
         fullName, 
         email, 
-        hashedPassword
+        password:hashedPassword
     });
 
     const token = jwt.sign({
@@ -37,6 +37,39 @@ async function registerUser(req, res) {
     });
 }
 
+async function loginUser(req, res) {
+    const {email, password} = req.body;
+
+    const isUserExist = await userModel.findOne({email});
+
+    if(!isUserExist){
+        return res.status(400).json({message: 'Invalid email or password'});
+    }
+
+    const isPasswordValid = await bcrypt.compare(password, isUserExist.password);
+
+    if(!isPasswordValid){
+        return res.status(400).json({message: 'Invalid email or password'});
+    }
+
+    const token = jwt.sign({
+        id: isUserExist._id
+    }, process.env.JWT_SECRET);
+
+    res.cookie('token', token);
+
+    // 201 status = new resource created...
+    res.status(201).json({
+        message: 'User logged in successfully',
+        user: {
+            id: isUserExist._id,
+            fullName: isUserExist.fullName,
+            email: isUserExist.email
+        }
+    });
+}
+
 module.exports = {
-    registerUser
+    registerUser,
+    loginUser
 };
