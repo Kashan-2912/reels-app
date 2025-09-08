@@ -1,8 +1,8 @@
 const express = require('express');
+const app = require('./src/app');
+const connectDb = require('./src/db/db');
 
-// make models, controllers, routes, etc.
-
-const app = express();
+connectDb();
 
 app.get("/", (req, res) => {
   res.send("Hello from the backend!");
