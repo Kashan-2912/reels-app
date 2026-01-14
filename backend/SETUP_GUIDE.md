@@ -156,7 +156,7 @@ sudo systemctl start mongod
 3. Get connection string
 4. Update .env:
    ```
-   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/reel-app
+   MONGODB_URI=
    ```
 
 #### Option C: Docker
@@ -202,7 +202,7 @@ No manual setup needed - Mongoose creates them on first insert.
 ### MONGODB_URI
 - Connection string to MongoDB
 - Local: `mongodb://localhost:27017/reel-app`
-- Atlas: `mongodb+srv://user:pass@cluster.mongodb.net/db`
+- Atlas: ``
 
 ### NODE_ENV
 - `development` - allows localhost, verbose logging
