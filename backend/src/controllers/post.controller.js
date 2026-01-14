@@ -3,6 +3,14 @@ const commentModel = require('../models/comment.model');
 const userModel = require('../models/user.model');
 const mongoose = require('mongoose');
 
+// Extract hashtags from text
+function extractHashtags(text) {
+    if (!text) return [];
+    const hashtagRegex = /#[\w]+/g;
+    const hashtags = text.match(hashtagRegex) || [];
+    return [...new Set(hashtags.map(tag => tag.toLowerCase()))]; // Remove duplicates
+}
+
 // ==================== CRUD Operations ====================
 
 // Create a new post
@@ -65,6 +73,9 @@ async function createPost(req, res) {
             return res.status(404).json({ message: 'User not found.' });
         }
 
+        // Extract hashtags from description
+        const hashtags = extractHashtags(description);
+
         // Create post
         const newPost = await postModel.create({
             userId,
@@ -73,7 +84,8 @@ async function createPost(req, res) {
             profilePic: user.profilePic || null,
             photos: photos || [],
             video: video || null,
-            description: description?.trim() || ''
+            description: description?.trim() || '',
+            hashtags: hashtags
         });
 
         // Increment user's post count
@@ -91,6 +103,7 @@ async function createPost(req, res) {
                 photos: newPost.photos,
                 video: newPost.video,
                 description: newPost.description,
+                hashtags: newPost.hashtags,
                 isReel: newPost.isReel,
                 likesCount: newPost.likesCount,
                 commentsCount: newPost.commentsCount,
@@ -223,6 +236,8 @@ async function updatePost(req, res) {
             }
 
             post.description = description.trim();
+            // Extract and update hashtags
+            post.hashtags = extractHashtags(description);
         }
 
         post.updatedAt = new Date();
@@ -239,6 +254,7 @@ async function updatePost(req, res) {
                 photos: post.photos,
                 video: post.video,
                 description: post.description,
+                hashtags: post.hashtags,
                 isReel: post.isReel,
                 likesCount: post.likesCount,
                 commentsCount: post.commentsCount,

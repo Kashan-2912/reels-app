@@ -37,6 +37,13 @@ const postSchema = new mongoose.Schema({
         maxlength: 2200
     },
 
+    // Hashtags
+    hashtags: {
+        type: [String],
+        default: [],
+        index: true
+    },
+
     // Engagement
     likes: {
         type: [{
