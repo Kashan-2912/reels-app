@@ -99,6 +99,25 @@ const postSchema = new mongoose.Schema({
         default: 0
     },
 
+    // Views tracking
+    views: {
+        type: [{
+            userId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'user'
+            },
+            viewedAt: {
+                type: Date,
+                default: Date.now
+            }
+        }],
+        default: []
+    },
+    viewsCount: {
+        type: Number,
+        default: 0
+    },
+
     // Metadata
     isReel: {
         type: Boolean,

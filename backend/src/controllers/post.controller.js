@@ -109,6 +109,7 @@ async function createPost(req, res) {
                 commentsCount: newPost.commentsCount,
                 savesCount: newPost.savesCount,
                 sharesCount: newPost.sharesCount,
+                viewsCount: newPost.viewsCount,
                 createdAt: newPost.createdAt,
                 updatedAt: newPost.updatedAt
             }
@@ -260,6 +261,7 @@ async function updatePost(req, res) {
                 commentsCount: post.commentsCount,
                 savesCount: post.savesCount,
                 sharesCount: post.sharesCount,
+                viewsCount: post.viewsCount,
                 createdAt: post.createdAt,
                 updatedAt: post.updatedAt
             }

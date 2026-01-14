@@ -20,6 +20,15 @@ const {
     // Share
     sharePost
 } = require('../controllers/post.controller');
+const {
+    // Views
+    trackPostView,
+    getPostViews,
+    // Comment Likes
+    likeComment,
+    unlikeComment,
+    getCommentLikes
+} = require('../controllers/engagement.controller');
 const verifyToken = require('../middleware/auth.middleware');
 
 const router = express.Router();
@@ -75,5 +84,24 @@ router.post('/:postId/unsave', verifyToken, unsavePost);
 
 // Share post (protected)
 router.post('/:postId/share', verifyToken, sharePost);
+
+// ==================== Post Views Routes ====================
+
+// Track post view (protected)
+router.post('/:postId/view', verifyToken, trackPostView);
+
+// Get post views (public)
+router.get('/:postId/views', getPostViews);
+
+// ==================== Comment Likes Routes ====================
+
+// Like comment (protected)
+router.post('/comment/:commentId/like', verifyToken, likeComment);
+
+// Unlike comment (protected)
+router.post('/comment/:commentId/unlike', verifyToken, unlikeComment);
+
+// Get comment likes (public)
+router.get('/comment/:commentId/likes', getCommentLikes);
 
 module.exports = router;
