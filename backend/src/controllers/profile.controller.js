@@ -1,4 +1,5 @@
 const userModel = require('../models/user.model');
+const notificationModel = require('../models/notification.model');
 const mongoose = require('mongoose');
 
 // Get user profile by userName
@@ -186,6 +187,16 @@ async function followUser(req, res) {
         // Save both users
         await currentUser.save();
         await targetUser.save();
+
+        // Create notification
+        await notificationModel.create({
+            userId: targetUser._id,
+            fromUserId: currentUser._id,
+            fromUserName: currentUser.userName,
+            fromUserProfilePic: currentUser.profilePic,
+            type: 'follow',
+            message: `${currentUser.userName} started following you`
+        });
 
         return res.status(200).json({
             message: `Successfully followed ${targetUser.userName}`,

@@ -8,6 +8,7 @@ const savedRoutes = require('./routes/saved.routes');
 const searchRoutes = require('./routes/search.routes');
 const exploreRoutes = require('./routes/explore.routes');
 const hashtagRoutes = require('./routes/hashtag.routes');
+const notificationRoutes = require('./routes/notification.routes');
 
 const app = express();
 app.use(express.json());
@@ -21,5 +22,6 @@ app.use('/api/saved', savedRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/explore', exploreRoutes);
 app.use('/api/hashtags', hashtagRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 module.exports = app;

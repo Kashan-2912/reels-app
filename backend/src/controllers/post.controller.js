@@ -1,6 +1,7 @@
 const postModel = require('../models/post.model');
 const commentModel = require('../models/comment.model');
 const userModel = require('../models/user.model');
+const notificationModel = require('../models/notification.model');
 const mongoose = require('mongoose');
 
 // Extract hashtags from text
@@ -353,6 +354,20 @@ async function likePost(req, res) {
         post.likesCount = post.likes.length;
         await post.save();
 
+        // Create notification if not the post owner
+        if (post.userId.toString() !== userId) {
+            const user = await userModel.findById(userId).select('userName');
+            await notificationModel.create({
+                userId: post.userId,
+                fromUserId: userId,
+                fromUserName: user.userName,
+                fromUserProfilePic: (await userModel.findById(userId).select('profilePic')).profilePic,
+                type: 'like',
+                message: `${user.userName} liked your post`,
+                postId
+            });
+        }
+
         return res.status(200).json({
             message: 'Post liked successfully',
             likesCount: post.likesCount
@@ -503,6 +518,20 @@ async function addComment(req, res) {
         post.comments.push(newComment._id);
         post.commentsCount = post.comments.length;
         await post.save();
+
+        // Create notification if not the post owner
+        if (post.userId.toString() !== userId) {
+            await notificationModel.create({
+                userId: post.userId,
+                fromUserId: userId,
+                fromUserName: user.userName,
+                fromUserProfilePic: user.profilePic || null,
+                type: 'comment',
+                message: `${user.userName} commented on your post`,
+                postId,
+                commentId: newComment._id
+            });
+        }
 
         return res.status(201).json({
             message: 'Comment added successfully',
@@ -739,6 +768,20 @@ async function sharePost(req, res) {
         });
         post.sharesCount = post.shares.length;
         await post.save();
+
+        // Create notification if not the post owner
+        if (post.userId.toString() !== userId) {
+            const user = await userModel.findById(userId).select('userName profilePic');
+            await notificationModel.create({
+                userId: post.userId,
+                fromUserId: userId,
+                fromUserName: user.userName,
+                fromUserProfilePic: user.profilePic,
+                type: 'share',
+                message: `${user.userName} shared your post`,
+                postId
+            });
+        }
 
         // Generate share URL
         const shareUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/post/${postId}`;
