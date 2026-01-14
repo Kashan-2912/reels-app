@@ -30,18 +30,14 @@ async function getSavedPosts(req, res) {
             .skip(skip)
             .limit(limitNum)
             .populate('userId', 'userName profileName profilePic')
-            .populate({
-                path: 'likes',
-                select: 'userName'
-            })
+            .populate('likes', 'userName')
             .populate({
                 path: 'comments',
                 populate: {
                     path: 'userId',
                     select: 'userName profilePic'
                 }
-            })
-            .populate('saves', 'userName');
+            });
 
         const totalSaved = user.saves.length;
         const totalPages = Math.ceil(totalSaved / limitNum);

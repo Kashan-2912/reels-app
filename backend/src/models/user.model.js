@@ -42,11 +42,6 @@ const userSchema = new mongoose.Schema({
     maxlength: 500
   },
 
-  story: {
-    type: Array,
-    default: []
-  },
-
   postsCount: {
     type: Number,
     default: 0
@@ -84,6 +79,28 @@ const userSchema = new mongoose.Schema({
       userName: String,
       profileName: String,
       profilePic: String
+    }],
+    default: []
+  },
+
+  saves: {
+    type: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'post'
+    }],
+    default: []
+  },
+
+  story: {
+    type: [{
+      imageOrVideo: {
+        type: String,
+        required: true
+      },
+      createdAt: {
+        type: Date,
+        default: Date.now
+      }
     }],
     default: []
   }

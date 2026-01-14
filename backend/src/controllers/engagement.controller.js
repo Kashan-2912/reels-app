@@ -127,7 +127,7 @@ async function likeComment(req, res) {
         }
 
         // Check if already liked
-        if (comment.likes.includes(userId)) {
+        if (comment.likes.some(like => like.toString() === userId)) {
             return res.status(400).json({ message: 'Comment already liked.' });
         }
 

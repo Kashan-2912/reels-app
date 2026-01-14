@@ -345,7 +345,7 @@ async function likePost(req, res) {
         }
 
         // Check if already liked
-        if (post.likes.includes(userId)) {
+        if (post.likes.some(like => like.toString() === userId)) {
             return res.status(400).json({ message: 'Post already liked.' });
         }
 
@@ -677,14 +677,24 @@ async function savePost(req, res) {
         }
 
         // Check if already saved
-        if (post.saves.includes(userId)) {
+        if (post.saves.some(save => save.toString() === userId)) {
             return res.status(400).json({ message: 'Post already saved.' });
+        }
+
+        // Get user to update saves array
+        const user = await userModel.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found.' });
         }
 
         // Save post
         post.saves.push(userId);
         post.savesCount = post.saves.length;
         await post.save();
+
+        // Update user's saves array
+        user.saves.push(post._id);
+        await user.save();
 
         return res.status(200).json({
             message: 'Post saved successfully',
@@ -723,10 +733,23 @@ async function unsavePost(req, res) {
             return res.status(400).json({ message: 'Post not saved yet.' });
         }
 
+        // Get user to update saves array
+        const user = await userModel.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found.' });
+        }
+
         // Unsave post
         post.saves.splice(saveIndex, 1);
         post.savesCount = post.saves.length;
         await post.save();
+
+        // Remove from user's saves array
+        const userSaveIndex = user.saves.findIndex(id => id.toString() === post._id.toString());
+        if (userSaveIndex !== -1) {
+            user.saves.splice(userSaveIndex, 1);
+            await user.save();
+        }
 
         return res.status(200).json({
             message: 'Post unsaved successfully',
