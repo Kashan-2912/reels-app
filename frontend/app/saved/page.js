@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import { FiLoader, FiGrid, FiList } from 'react-icons/fi';
 import PostCard from '@/components/PostCard';
 import toast from 'react-hot-toast';
+import { savedService, postService } from '@/src/services';
 
 export default function SavedPostsPage() {
   const router = useRouter();
@@ -28,47 +29,12 @@ export default function SavedPostsPage() {
   const fetchSavedPosts = async () => {
     try {
       setIsLoading(true);
-      // TODO: Implement actual API call to getSavedPosts()
-
-      // Mock data
-      setSavedPosts([
-        {
-          id: '1',
-          description: 'Beautiful sunset at the beach',
-          photos: ['https://via.placeholder.com/600x600?text=Saved+Post+1'],
-          video: null,
-          likesCount: 234,
-          commentsCount: 12,
-          savesCount: 45,
-          isLiked: false,
-          isSaved: true,
-          userName: 'photography_hub',
-          profileName: 'Photography Hub',
-          profilePic: 'https://via.placeholder.com/40x40',
-          createdAt: new Date(),
-          hashtags: ['#sunset', '#beach', '#photography'],
-          comments: [],
-        },
-        {
-          id: '2',
-          description: 'Adventure in the mountains',
-          photos: ['https://via.placeholder.com/600x600?text=Saved+Post+2'],
-          video: null,
-          likesCount: 456,
-          commentsCount: 28,
-          savesCount: 89,
-          isLiked: true,
-          isSaved: true,
-          userName: 'adventure_life',
-          profileName: 'Adventure Life',
-          profilePic: 'https://via.placeholder.com/40x40',
-          createdAt: new Date(Date.now() - 86400000),
-          hashtags: ['#mountains', '#hiking', '#adventure'],
-          comments: [],
-        },
-      ]);
+      const response = await savedService.getSavedPosts(1, 50);
+      setSavedPosts(response.data?.posts || []);
     } catch (error) {
+      console.error('Error fetching saved posts:', error);
       toast.error('Failed to load saved posts');
+      setSavedPosts([]);
     } finally {
       setIsLoading(false);
     }
@@ -76,10 +42,11 @@ export default function SavedPostsPage() {
 
   const removeSavedPost = async (postId) => {
     try {
-      // TODO: Implement API call to unsavePost(postId)
-      setSavedPosts((prev) => prev.filter((p) => p.id !== postId));
+      await postService.unsavePost(postId);
+      setSavedPosts((prev) => prev.filter((p) => p._id !== postId));
       toast.success('Post removed from saves');
     } catch (error) {
+      console.error('Error removing saved post:', error);
       toast.error('Failed to remove saved post');
     }
   };

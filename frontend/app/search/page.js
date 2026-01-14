@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { FiSearch, FiLoader, FiArrowLeft } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { searchService, hashtagService, profileService } from '@/src/services';
 
 export default function SearchPage() {
   const router = useRouter();
@@ -37,55 +38,22 @@ export default function SearchPage() {
 
     setIsLoading(true);
     try {
-      // TODO: Implement actual search API calls based on activeTab
-      // - searchUsers(query) for users tab
-      // - searchPosts(query) for posts tab
-      // - searchHashtags(query) for hashtags tab
-
-      // Mock results for now
+      // Actual search API calls based on activeTab
       if (activeTab === 'users') {
-        setSearchResults([
-          {
-            id: '1',
-            userName: `user_${query}`,
-            profileName: `User ${query}`,
-            profilePic: 'https://via.placeholder.com/50x50',
-            isFollowing: false,
-          },
-          {
-            id: '2',
-            userName: `account_${query}`,
-            profileName: `Account ${query}`,
-            profilePic: 'https://via.placeholder.com/50x50',
-            isFollowing: false,
-          },
-        ]);
+        const response = await searchService.searchUsers(query, 1, 20);
+        setSearchResults(response.data?.users || []);
       } else if (activeTab === 'posts') {
-        setSearchResults([
-          {
-            id: '1',
-            description: `Post about ${query}`,
-            photos: ['https://via.placeholder.com/400x400'],
-            likesCount: 123,
-          },
-          {
-            id: '2',
-            description: `Another ${query} post`,
-            photos: ['https://via.placeholder.com/400x400'],
-            likesCount: 89,
-          },
-        ]);
+        const response = await searchService.searchPosts(query, 1, 20);
+        setSearchResults(response.data?.posts || []);
       } else {
-        setSearchResults([
-          { tag: `#${query}`, postCount: 12450 },
-          { tag: `#${query}trending`, postCount: 8932 },
-          { tag: `#${query}2024`, postCount: 5123 },
-        ]);
+        const response = await hashtagService.searchHashtags(query, 20);
+        setSearchResults(response.data?.hashtags || []);
       }
 
       // Add to recent searches
       addRecentSearch(query);
     } catch (error) {
+      console.error('Search error:', error);
       toast.error('Search failed. Please try again.');
     } finally {
       setIsLoading(false);
@@ -251,10 +219,15 @@ function UserSearchResult({ user }) {
   const handleFollow = async () => {
     setIsLoading(true);
     try {
-      // TODO: Implement follow/unfollow API
+      if (isFollowing) {
+        await profileService.unfollowUser(userName);
+      } else {
+        await profileService.followUser(userName);
+      }
       setIsFollowing(!isFollowing);
       toast.success(isFollowing ? 'Unfollowed!' : 'Followed!');
     } catch (error) {
+      console.error('Error following user:', error);
       toast.error('Failed to follow user');
     } finally {
       setIsLoading(false);

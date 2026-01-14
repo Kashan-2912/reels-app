@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import { FiLoader, FiCheckCircle, FiTrash2 } from 'react-icons/fi';
 import { FaHeart, FaComment, FaUserPlus } from 'react-icons/fa';
 import toast from 'react-hot-toast';
+import { notificationService } from '@/src/services';
 
 export default function NotificationsPage() {
   const router = useRouter();
@@ -27,42 +28,12 @@ export default function NotificationsPage() {
   const fetchNotifications = async () => {
     try {
       setIsLoading(true);
-      // TODO: Implement actual API call to getNotifications()
-
-      // Mock notifications for now
-      setNotifications([
-        {
-          id: '1',
-          type: 'like',
-          userName: 'john_doe',
-          profileName: 'John Doe',
-          profilePic: 'https://via.placeholder.com/40x40',
-          postId: 'post_1',
-          timestamp: new Date(Date.now() - 5 * 60000), // 5 min ago
-          isRead: false,
-        },
-        {
-          id: '2',
-          type: 'comment',
-          userName: 'jane_smith',
-          profileName: 'Jane Smith',
-          profilePic: 'https://via.placeholder.com/40x40',
-          comment: 'Amazing shot! 📸',
-          postId: 'post_2',
-          timestamp: new Date(Date.now() - 15 * 60000), // 15 min ago
-          isRead: false,
-        },
-        {
-          id: '3',
-          type: 'follow',
-          userName: 'travel_hub',
-          profileName: 'Travel Hub',
-          profilePic: 'https://via.placeholder.com/40x40',
-          timestamp: new Date(Date.now() - 60 * 60000), // 1 hour ago
-          isRead: true,
-        },
-      ]);
+      
+      // Fetch notifications from backend
+      const response = await notificationService.getNotifications(1, 20, null, null);
+      setNotifications(response.data?.notifications || []);
     } catch (error) {
+      console.error('Error fetching notifications:', error);
       toast.error('Failed to load notifications');
     } finally {
       setIsLoading(false);
@@ -71,23 +42,25 @@ export default function NotificationsPage() {
 
   const markAsRead = async (notificationId) => {
     try {
-      // TODO: Implement API call to markNotificationAsRead(notificationId)
+      await notificationService.markAsRead(notificationId);
       setNotifications((prev) =>
         prev.map((n) =>
-          n.id === notificationId ? { ...n, isRead: true } : n
+          n._id === notificationId ? { ...n, isRead: true } : n
         )
       );
     } catch (error) {
+      console.error('Error marking notification as read:', error);
       toast.error('Failed to update notification');
     }
   };
 
   const deleteNotification = async (notificationId) => {
     try {
-      // TODO: Implement API call to deleteNotification(notificationId)
-      setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+      await notificationService.deleteNotification(notificationId);
+      setNotifications((prev) => prev.filter((n) => n._id !== notificationId));
       toast.success('Notification deleted');
     } catch (error) {
+      console.error('Error deleting notification:', error);
       toast.error('Failed to delete notification');
     }
   };
@@ -96,10 +69,11 @@ export default function NotificationsPage() {
     if (!window.confirm('Clear all notifications?')) return;
 
     try {
-      // TODO: Implement API call to clearAllNotifications()
+      await notificationService.deleteAllNotifications();
       setNotifications([]);
       toast.success('All notifications cleared');
     } catch (error) {
+      console.error('Error clearing notifications:', error);
       toast.error('Failed to clear notifications');
     }
   };

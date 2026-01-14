@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { FiSearch, FiTrendingUp, FiUsers, FiLoader } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { exploreService, hashtagService, profileService } from '@/src/services';
 
 export default function ExplorePage() {
   const router = useRouter();
@@ -29,71 +30,44 @@ export default function ExplorePage() {
   const fetchExploreData = async () => {
     try {
       setIsLoading(true);
-      // TODO: Replace with actual API calls to:
-      // - getExplore() for trending posts
-      // - getSuggestedUsers() for suggested users
-      // - getTrendingHashtags() for trending hashtags
+      
+      // Fetch trending posts from backend
+      const postsResponse = await exploreService.getTrendingPosts(1, 20);
+      setTrendingPosts(postsResponse.data?.posts || []);
 
-      // Mock data for now
-      setTrendingPosts([
-        {
-          id: '1',
-          description: 'Amazing sunset at the beach',
-          photos: ['https://via.placeholder.com/600x600?text=Post+1'],
-          likesCount: 1250,
-          commentsCount: 45,
-        },
-        {
-          id: '2',
-          description: 'Coffee time with friends',
-          photos: ['https://via.placeholder.com/600x600?text=Post+2'],
-          likesCount: 890,
-          commentsCount: 32,
-        },
-      ]);
+      // Fetch suggested users from backend
+      const usersResponse = await exploreService.getSuggestedUsers(10);
+      setSuggestedUsers(usersResponse.data?.suggestedUsers || []);
 
-      setSuggestedUsers([
-        {
-          id: '1',
-          userName: 'photography_hub',
-          profileName: 'Photography Hub',
-          profilePic: 'https://via.placeholder.com/50x50?text=User+1',
-          mutualFollowers: 234,
-          isFollowing: false,
-        },
-        {
-          id: '2',
-          userName: 'travel_diaries',
-          profileName: 'Travel Diaries',
-          profilePic: 'https://via.placeholder.com/50x50?text=User+2',
-          mutualFollowers: 156,
-          isFollowing: false,
-        },
-      ]);
-
-      setTrendingHashtags([
-        { tag: '#photography', postCount: 45230 },
-        { tag: '#travel', postCount: 38920 },
-        { tag: '#sunset', postCount: 32150 },
-        { tag: '#lifestyle', postCount: 28760 },
-        { tag: '#nature', postCount: 25430 },
-      ]);
+      // Fetch trending hashtags from backend
+      const hashtagsResponse = await hashtagService.getTrendingHashtags(10);
+      setTrendingHashtags(hashtagsResponse.data?.hashtags || []);
     } catch (error) {
+      console.error('Error fetching explore data:', error);
       toast.error('Failed to load explore data');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleFollowUser = async (userId, isFollowing) => {
+  const handleFollowUser = async (targetUserName, isFollowing) => {
     try {
-      // TODO: Implement follow/unfollow API call
-      setFollowingState((prev) => ({
-        ...prev,
-        [userId]: !isFollowing,
-      }));
-      toast.success(isFollowing ? 'Unfollowed!' : 'Followed!');
+      if (isFollowing) {
+        await profileService.unfollowUser(targetUserName);
+        toast.success('Unfollowed!');
+      } else {
+        await profileService.followUser(targetUserName);
+        toast.success('Followed!');
+      }
+      
+      // Update UI state
+      setSuggestedUsers(prev => 
+        prev.map(u => 
+          u.userName === targetUserName ? { ...u, isFollowing: !isFollowing } : u
+        )
+      );
     } catch (error) {
+      console.error('Error following user:', error);
       toast.error('Failed to follow user');
     }
   };
@@ -196,17 +170,17 @@ export default function ExplorePage() {
                   <button
                     onClick={() =>
                       handleFollowUser(
-                        suggestedUser.id,
-                        followingState[suggestedUser.id] || suggestedUser.isFollowing
+                        suggestedUser.userName,
+                        suggestedUser.isFollowing
                       )
                     }
                     className={`px-3 py-1 text-xs rounded-lg transition font-semibold ${
-                      followingState[suggestedUser.id] || suggestedUser.isFollowing
+                      suggestedUser.isFollowing
                         ? 'bg-gray-200 dark:bg-gray-800 text-black dark:text-white hover:bg-gray-300'
                         : 'bg-red-500 text-white hover:bg-red-600'
                     }`}
                   >
-                    {followingState[suggestedUser.id] || suggestedUser.isFollowing ? 'Following' : 'Follow'}
+                    {suggestedUser.isFollowing ? 'Following' : 'Follow'}
                   </button>
                 </div>
               ))}

@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import { FiLoader, FiArrowLeft } from 'react-icons/fi';
 import PostCard from '@/components/PostCard';
 import toast from 'react-hot-toast';
+import { hashtagService } from '@/src/services';
 
 export default function HashtagPage() {
   const router = useRouter();
@@ -33,37 +34,21 @@ export default function HashtagPage() {
   const fetchHashtagData = async () => {
     try {
       setIsLoading(true);
-      // TODO: Implement actual API calls:
-      // - getHashtagPosts(hashtag) for posts
-      // - getHashtagStats(hashtag) for stats
-
-      // Mock data
-      setHashtagStats({
-        tag: `#${hashtag}`,
-        postCount: 12450,
-        followerCount: 8932,
+      const response = await hashtagService.getPostsByHashtag(hashtag, 1, 50);
+      setPosts(response.data?.posts || []);
+      
+      // Get hashtag stats
+      const statsResponse = await hashtagService.getTrendingHashtags(1, 20);
+      const hashtagStats = statsResponse.data?.hashtags?.find(h => h.name === hashtag) || {
+        name: hashtag,
+        postsCount: 0,
+        followersCount: 0,
         isFollowing: false,
-      });
-
-      setPosts([
-        {
-          id: '1',
-          description: `Amazing ${hashtag} content`,
-          photos: ['https://via.placeholder.com/600x600?text=Post+1'],
-          likesCount: 234,
-          commentsCount: 12,
-          savesCount: 45,
-          isLiked: false,
-          isSaved: false,
-          userName: 'photography_hub',
-          profileName: 'Photography Hub',
-          profilePic: 'https://via.placeholder.com/40x40',
-          createdAt: new Date(),
-          hashtags: [`#${hashtag}`],
-          comments: [],
-        },
-      ]);
+      };
+      setHashtagStats(hashtagStats);
+      setIsFollowingHashtag(hashtagStats.isFollowing || false);
     } catch (error) {
+      console.error('Error fetching hashtag data:', error);
       toast.error('Failed to load hashtag');
     } finally {
       setIsLoading(false);
@@ -72,10 +57,12 @@ export default function HashtagPage() {
 
   const handleFollowHashtag = async () => {
     try {
-      // TODO: Implement follow/unfollow hashtag API
+      // Note: Follow/unfollow hashtag functionality may not be available in the backend yet
+      // This is a placeholder for when the backend implements this feature
       setIsFollowingHashtag(!isFollowingHashtag);
       toast.success(isFollowingHashtag ? 'Unfollowed hashtag' : 'Following hashtag!');
     } catch (error) {
+      console.error('Error following hashtag:', error);
       toast.error('Failed to follow hashtag');
     }
   };

@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/authStore';
 import { FiLoader, FiArrowLeft, FiTrash2 } from 'react-icons/fi';
 import PostCard from '@/components/PostCard';
 import toast from 'react-hot-toast';
+import { postService } from '@/src/services';
 
 export default function PostPage() {
   const router = useRouter();
@@ -34,27 +35,10 @@ export default function PostPage() {
   const fetchPost = async () => {
     try {
       setIsLoading(true);
-      // TODO: Implement getPostById(postId) API call
-
-      // Mock post
-      setPost({
-        id: postId,
-        description: 'Amazing sunset at the beach! 🌅',
-        photos: ['https://via.placeholder.com/800x800?text=Post'],
-        video: null,
-        likesCount: 234,
-        commentsCount: 12,
-        savesCount: 45,
-        sharesCount: 8,
-        isLiked: false,
-        isSaved: false,
-        userName: 'photography_hub',
-        profileName: 'Photography Hub',
-        profilePic: 'https://via.placeholder.com/40x40',
-        createdAt: new Date(Date.now() - 86400000),
-        hashtags: ['#sunset', '#beach', '#photography'],
-      });
+      const response = await postService.getPost(postId);
+      setPost(response.data?.post || null);
     } catch (error) {
+      console.error('Error fetching post:', error);
       toast.error('Failed to load post');
     } finally {
       setIsLoading(false);
@@ -63,22 +47,11 @@ export default function PostPage() {
 
   const fetchComments = async () => {
     try {
-      // TODO: Implement getPostComments(postId) API call
-
-      // Mock comments
-      setComments([
-        {
-          _id: '1',
-          text: 'Beautiful shot! 📸',
-          userName: 'user1',
-          profileName: 'User One',
-          profilePic: 'https://via.placeholder.com/40x40',
-          likesCount: 5,
-          createdAt: new Date(Date.now() - 3600000),
-        },
-      ]);
+      const response = await postService.getPostComments(postId, 1, 50);
+      setComments(response.data?.comments || []);
     } catch (error) {
-      console.error('Failed to load comments:', error);
+      console.error('Error fetching comments:', error);
+      setComments([]);
     }
   };
 
@@ -88,9 +61,8 @@ export default function PostPage() {
 
     setIsAddingComment(true);
     try {
-      // TODO: Implement addComment(postId, newComment) API call
-      
-      const comment = {
+      const response = await postService.addComment(postId, newComment);
+      const newCommentData = response.data?.comment || {
         _id: Date.now().toString(),
         text: newComment,
         userName: user.userName,
@@ -100,10 +72,11 @@ export default function PostPage() {
         createdAt: new Date(),
       };
 
-      setComments([...comments, comment]);
+      setComments([...comments, newCommentData]);
       setNewComment('');
       toast.success('Comment added!');
     } catch (error) {
+      console.error('Error adding comment:', error);
       toast.error('Failed to add comment');
     } finally {
       setIsAddingComment(false);
@@ -112,10 +85,11 @@ export default function PostPage() {
 
   const deleteComment = async (commentId) => {
     try {
-      // TODO: Implement deleteComment(commentId) API call
+      await postService.deleteComment(commentId);
       setComments((prev) => prev.filter((c) => c._id !== commentId));
       toast.success('Comment deleted');
     } catch (error) {
+      console.error('Error deleting comment:', error);
       toast.error('Failed to delete comment');
     }
   };
@@ -124,10 +98,11 @@ export default function PostPage() {
     if (!window.confirm('Delete this post?')) return;
 
     try {
-      // TODO: Implement deletePost(postId) API call
+      await postService.deletePost(postId);
       toast.success('Post deleted');
       router.push('/home');
     } catch (error) {
+      console.error('Error deleting post:', error);
       toast.error('Failed to delete post');
     }
   };

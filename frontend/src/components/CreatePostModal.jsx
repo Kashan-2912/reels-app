@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { FiX, FiUpload } from 'react-icons/fi';
 import toast from 'react-hot-toast';
+import { postService } from '@/src/services';
 
 export default function CreatePostModal({ isOpen, onClose }) {
   const [caption, setCaption] = useState('');
@@ -67,7 +68,6 @@ export default function CreatePostModal({ isOpen, onClose }) {
 
     setIsSubmitting(true);
     try {
-      // TODO: Implement post creation with API
       const formData = new FormData();
       formData.append('description', description);
       formData.append('caption', caption);
@@ -80,12 +80,42 @@ export default function CreatePostModal({ isOpen, onClose }) {
         formData.append('hashtags', JSON.stringify(tags));
       }
 
-      // TODO: Add photo/video upload
+      // Add photos/videos to FormData
+      photos.forEach((photo, index) => {
+        // Convert data URL to Blob if needed
+        if (photo.startsWith('data:')) {
+          const arr = photo.split(',');
+          const mime = arr[0].match(/:(.*?);/)[1];
+          const bstr = atob(arr[1]);
+          const n = bstr.length;
+          const u8arr = new Uint8Array(n);
+          for (let i = 0; i < n; i++) {
+            u8arr[i] = bstr.charCodeAt(i);
+          }
+          formData.append('photos', new Blob([u8arr], { type: mime }), `photo-${index}.jpg`);
+        }
+      });
 
+      videoPreviews.forEach((video, index) => {
+        if (video.startsWith('data:')) {
+          const arr = video.split(',');
+          const mime = arr[0].match(/:(.*?);/)[1];
+          const bstr = atob(arr[1]);
+          const n = bstr.length;
+          const u8arr = new Uint8Array(n);
+          for (let i = 0; i < n; i++) {
+            u8arr[i] = bstr.charCodeAt(i);
+          }
+          formData.append('video', new Blob([u8arr], { type: mime }), `video-${index}.mp4`);
+        }
+      });
+
+      await postService.createPost(formData);
       toast.success('Post created successfully!');
       resetForm();
       onClose();
     } catch (error) {
+      console.error('Error creating post:', error);
       toast.error(error.message || 'Failed to create post');
     } finally {
       setIsSubmitting(false);

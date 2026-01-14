@@ -7,6 +7,7 @@ import { FiLoader, FiHeart, FiMessageCircle, FiShare2, FiBookmark } from 'react-
 import { FaHeart } from 'react-icons/fa';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { exploreService, postService } from '@/src/services';
 
 export default function ReelsPage() {
   const router = useRouter();
@@ -28,41 +29,12 @@ export default function ReelsPage() {
   const fetchReels = async () => {
     try {
       setIsLoading(true);
-      // TODO: Implement getReels() API call
-
-      // Mock reels data
-      setReels([
-        {
-          id: '1',
-          video: 'https://via.placeholder.com/400x800?text=Reel+1',
-          description: 'Amazing dance moves! 💃',
-          userName: 'dance_hub',
-          profileName: 'Dance Hub',
-          profilePic: 'https://via.placeholder.com/40x40',
-          likesCount: 1234,
-          commentsCount: 89,
-          sharesCount: 45,
-          isLiked: false,
-          isSaved: false,
-          hashtags: ['#dance', '#trending'],
-        },
-        {
-          id: '2',
-          video: 'https://via.placeholder.com/400x800?text=Reel+2',
-          description: 'Delicious recipe! 🍕',
-          userName: 'food_channel',
-          profileName: 'Food Channel',
-          profilePic: 'https://via.placeholder.com/40x40',
-          likesCount: 2345,
-          commentsCount: 123,
-          sharesCount: 67,
-          isLiked: false,
-          isSaved: false,
-          hashtags: ['#food', '#cooking'],
-        },
-      ]);
+      const response = await exploreService.getReels(1, 20);
+      setReels(response.data?.reels || []);
     } catch (error) {
+      console.error('Error fetching reels:', error);
       toast.error('Failed to load reels');
+      setReels([]);
     } finally {
       setIsLoading(false);
     }
@@ -79,10 +51,14 @@ export default function ReelsPage() {
 
   const handleLike = async (reelId, isLiked) => {
     try {
-      // TODO: Implement likeReel/unlikeReel API
+      if (isLiked) {
+        await postService.unlikePost(reelId);
+      } else {
+        await postService.likePost(reelId);
+      }
       setReels((prev) =>
         prev.map((r) =>
-          r.id === reelId
+          r._id === reelId
             ? {
                 ...r,
                 isLiked: !isLiked,
@@ -92,22 +68,28 @@ export default function ReelsPage() {
         )
       );
     } catch (error) {
+      console.error('Error liking reel:', error);
       toast.error('Failed to like reel');
     }
   };
 
   const handleSave = async (reelId, isSaved) => {
     try {
-      // TODO: Implement saveReel/unsaveReel API
+      if (isSaved) {
+        await postService.unsavePost(reelId);
+      } else {
+        await postService.savePost(reelId);
+      }
       setReels((prev) =>
         prev.map((r) =>
-          r.id === reelId
+          r._id === reelId
             ? { ...r, isSaved: !isSaved }
             : r
         )
       );
       toast.success(isSaved ? 'Removed from saves' : 'Saved!');
     } catch (error) {
+      console.error('Error saving reel:', error);
       toast.error('Failed to save reel');
     }
   };

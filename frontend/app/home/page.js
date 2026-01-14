@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 import PostCard from '@/components/PostCard';
 import StoriesSection from '@/components/StoriesSection';
+import { feedService } from '@/src/services';
 
 export default function HomePage() {
   const router = useRouter();
@@ -31,10 +32,11 @@ export default function HomePage() {
     const loadStories = async () => {
       try {
         setIsLoadingStories(true);
-        // TODO: Implement getStories API call
-        setStories([]);
+        const response = await feedService.getFollowingStories();
+        setStories(response.data?.stories || []);
       } catch (error) {
         console.error('Failed to load stories:', error);
+        setStories([]);
       } finally {
         setIsLoadingStories(false);
       }

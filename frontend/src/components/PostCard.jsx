@@ -6,6 +6,7 @@ import { useFeedStore } from '@/store/feedStore';
 import toast from 'react-hot-toast';
 import { FiHeart, FiMessageCircle, FiShare2, FiBookmark } from 'react-icons/fi';
 import { FaHeart } from 'react-icons/fa';
+import { postService } from '@/src/services';
 
 export default function PostCard({ post }) {
   const { likePost, unlikePost, savePost, unsavePost } = useFeedStore();
@@ -194,10 +195,11 @@ function CommentSection({ postId, comments }) {
 
     setIsSubmitting(true);
     try {
-      // TODO: Implement add comment
+      await postService.addComment(post._id, newComment);
       toast.success('Comment added!');
       setNewComment('');
     } catch (error) {
+      console.error('Error adding comment:', error);
       toast.error('Failed to add comment');
     } finally {
       setIsSubmitting(false);
