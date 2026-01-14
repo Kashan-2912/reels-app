@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore } from '@/src/store/authStore';
 import { FiLoader, FiCheckCircle, FiTrash2 } from 'react-icons/fi';
 import { FaHeart, FaComment, FaUserPlus } from 'react-icons/fa';
 import toast from 'react-hot-toast';

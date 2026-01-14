@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { profileService } from '../services';
+import { profileService } from '@/src/services';
 
 export const useProfileStore = create((set) => ({
   profile: null,

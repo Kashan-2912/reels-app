@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore } from '@/src/store/authStore';
 import { FiLoader, FiHeart, FiMessageCircle, FiShare2, FiBookmark } from 'react-icons/fi';
 import { FaHeart } from 'react-icons/fa';
 import Link from 'next/link';

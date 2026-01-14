@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { postService, feedService } from '../services';
+import { postService, feedService } from '@/src/services';
 
 export const useFeedStore = create((set) => ({
   posts: [],

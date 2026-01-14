@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore } from '@/src/store/authStore';
 import { FiSearch, FiLoader, FiArrowLeft } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { searchService, hashtagService, profileService } from '@/src/services';

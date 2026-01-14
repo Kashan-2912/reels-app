@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useFeedStore } from '@/store/feedStore';
+import { useFeedStore } from '@/src/store/feedStore';
 import toast from 'react-hot-toast';
 import { FiHeart, FiMessageCircle, FiShare2, FiBookmark } from 'react-icons/fi';
 import { FaHeart } from 'react-icons/fa';

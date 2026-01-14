@@ -1,16 +1,39 @@
 import { create } from 'zustand';
-import { authService } from '../services';
+import { authService, profileService } from '@/src/services';
 
 export const useAuthStore = create((set) => ({
   user: null,
   isLoading: false,
   error: null,
 
-  // Load user from localStorage on init
-  initAuth: () => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      set({ user: JSON.parse(savedUser) });
+  // Load user from localStorage or revalidate via API (cookie-based session)
+  initAuth: async () => {
+    // Guard against SSR where localStorage is unavailable
+    if (typeof window === 'undefined') return;
+
+    try {
+      set({ isLoading: true, error: null });
+
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) {
+        set({ user: JSON.parse(savedUser), isLoading: false });
+        return;
+      }
+
+      // If no cached user, try to fetch the current user using the session cookie
+      const response = await profileService.getOwnProfile();
+      const user = response.data?.user || response.data;
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user));
+        set({ user, isLoading: false });
+        return;
+      }
+
+      set({ user: null, isLoading: false });
+    } catch (error) {
+      // If session is invalid, clear any stale data and keep user logged out
+      localStorage.removeItem('user');
+      set({ user: null, isLoading: false });
     }
   },
 

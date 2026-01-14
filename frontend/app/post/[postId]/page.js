@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore } from '@/src/store/authStore';
 import { FiLoader, FiArrowLeft, FiTrash2 } from 'react-icons/fi';
-import PostCard from '@/components/PostCard';
+import PostCard from '@/src/components/PostCard';
 import toast from 'react-hot-toast';
 import { postService } from '@/src/services';
 

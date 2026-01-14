@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore } from '@/src/store/authStore';
 import { FiHome, FiCompass, FiUser, FiLogOut, FiBell, FiSearch, FiBookmark } from 'react-icons/fi';
 import { BiSolidPlus } from 'react-icons/bi';
 import CreatePostModal from './CreatePostModal';

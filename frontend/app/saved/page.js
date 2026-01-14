@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore } from '@/src/store/authStore';
 import { FiLoader, FiGrid, FiList } from 'react-icons/fi';
-import PostCard from '@/components/PostCard';
+import PostCard from '@/src/components/PostCard';
 import toast from 'react-hot-toast';
 import { savedService, postService } from '@/src/services';
 
@@ -231,7 +231,7 @@ export default function SavedPostsPage() {
             No saved posts yet
           </p>
           <p className="text-gray-500 mt-2">
-            When you save posts, they'll appear here
+            When you save posts, they will appear here
           </p>
           <Link href="/home" className="inline-block mt-6 px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition">
             Explore Posts

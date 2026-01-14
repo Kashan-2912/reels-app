@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useProfileStore } from '@/store/profileStore';
-import { useAuthStore } from '@/store/authStore';
-import { postService } from '@/services';
+import { useProfileStore } from '@/src/store/profileStore';
+import { useAuthStore } from '@/src/store/authStore';
+import { postService, profileService } from '@/src/services';
 import toast from 'react-hot-toast';
 import { FiEdit2, FiUserPlus, FiUserCheck } from 'react-icons/fi';
 

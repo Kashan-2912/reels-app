@@ -2,12 +2,12 @@
 
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useFeedStore } from '@/store/feedStore';
-import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
-import PostCard from '@/components/PostCard';
-import StoriesSection from '@/components/StoriesSection';
+import PostCard from '@/src/components/PostCard';
+import StoriesSection from '@/src/components/StoriesSection';
 import { feedService } from '@/src/services';
+import { useAuthStore } from '@/src/store/authStore';
+import { useFeedStore } from '@/src/store/feedStore';
 
 export default function HomePage() {
   const router = useRouter();
