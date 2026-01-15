@@ -221,11 +221,7 @@ const navItems = [
 
 const storyFallback = [
   { id: '1', userName: 'hamzathe...', profilePic: 'https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?auto=format&fit=crop&w=200&q=80' },
-  { id: '2', userName: 'ozgetorer', profilePic: 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=200&q=80' },
-  { id: '3', userName: 'sukruozyl...', profilePic: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80' },
-  { id: '4', userName: 'almaterzic', profilePic: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=200&q=80' },
-  { id: '5', userName: 'bur_and_n', profilePic: 'https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=200&q=80' },
-  { id: '6', userName: '__abinf90', profilePic: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80' },
+  { id: '2', userName: '__abinf90', profilePic: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80' },
 ];
 
 const suggestedUsers = [
