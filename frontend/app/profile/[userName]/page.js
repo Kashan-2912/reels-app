@@ -97,11 +97,11 @@ export default function ProfilePage() {
     }
   };
 
-  const withFollowingState = (list = []) => {
+  const withFollowingState = (list = [], { forceFollowing = false } = {}) => {
     const set = new Set(userFollowingLookup);
     return list.map((person) => ({
       ...person,
-      isFollowing: set.has((person.userName || '').toLowerCase()),
+      isFollowing: forceFollowing ? true : set.has((person.userName || '').toLowerCase()),
     }));
   };
 
@@ -136,13 +136,22 @@ export default function ProfilePage() {
     setListLoading(true);
     try {
       const response = await profileService.getFollowing(userNameParam);
-      const list = withFollowingState(response.data?.following || []);
+      const list = withFollowingState(response.data?.following || [], { forceFollowing: true });
       setFollowing(list);
     } catch (error) {
       toast.error('Failed to load following');
       setFollowing([]);
     } finally {
       setListLoading(false);
+    }
+  };
+
+  const handleFollowerRemoved = async (targetUserName) => {
+    setFollowers((prev) => prev.filter((p) => p.userName !== targetUserName));
+    try {
+      await getProfile(userNameParam);
+    } catch (error) {
+      // silent
     }
   };
 
@@ -251,6 +260,8 @@ export default function ProfilePage() {
           loading={listLoading}
           onClose={() => setFollowersModalOpen(false)}
           onFollowStateChange={updateFollowingLookup}
+          mode="followers"
+          onRemoveFollower={handleFollowerRemoved}
         />
       )}
       {followingModalOpen && (
@@ -260,6 +271,7 @@ export default function ProfilePage() {
           loading={listLoading}
           onClose={() => setFollowingModalOpen(false)}
           onFollowStateChange={updateFollowingLookup}
+          mode="following"
         />
       )}
     </div>
@@ -436,12 +448,15 @@ function EditProfileModal({ profile, onClose }) {
   );
 }
 
-function FollowersModal({ title, people, onClose, loading, onFollowStateChange }) {
+function FollowersModal({ title, people, onClose, loading, onFollowStateChange, mode = 'followers', onRemoveFollower }) {
   const { user } = useAuthStore();
   const [list, setList] = useState(people || []);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [removingMap, setRemovingMap] = useState({});
 
   useEffect(() => {
     setList(people || []);
+    setSearchTerm('');
   }, [people]);
 
   const toggleFollow = async (targetUserName, currentlyFollowing) => {
@@ -462,6 +477,34 @@ function FollowersModal({ title, people, onClose, loading, onFollowStateChange }
     }
   };
 
+  const removeFollower = async (targetUserName) => {
+    try {
+      setRemovingMap((prev) => ({ ...prev, [targetUserName]: true }));
+      await profileService.removeFollower(targetUserName);
+      setList((prev) => prev.filter((p) => p.userName !== targetUserName));
+      if (onRemoveFollower) onRemoveFollower(targetUserName);
+      toast.success('Removed follower');
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to remove follower');
+    } finally {
+      setRemovingMap((prev) => {
+        const next = { ...prev };
+        delete next[targetUserName];
+        return next;
+      });
+    }
+  };
+
+  const filteredList = list.filter((person) => {
+    if (!searchTerm.trim()) return true;
+    const query = searchTerm.toLowerCase();
+    return (
+      person.userName?.toLowerCase().includes(query) ||
+      person.profileName?.toLowerCase().includes(query) ||
+      person.fullName?.toLowerCase().includes(query)
+    );
+  });
+
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4">
       <div className="w-full max-w-xl bg-[#111] border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden">
@@ -480,19 +523,20 @@ function FollowersModal({ title, people, onClose, loading, onFollowStateChange }
           <input
             type="text"
             placeholder="Search"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full rounded-lg bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm text-white placeholder-gray-500"
-            disabled
           />
         </div>
 
         <div className="max-h-[420px] overflow-y-auto">
           {loading ? (
             <div className="py-8 text-center text-gray-400">Loading...</div>
-          ) : list.length === 0 ? (
+          ) : filteredList.length === 0 ? (
             <div className="py-8 text-center text-gray-400">No users to show</div>
           ) : (
             <div className="divide-y divide-neutral-900">
-              {list.map((person) => (
+              {filteredList.map((person) => (
                 <div key={person.userName} className="flex items-center gap-3 px-4 py-3">
                   <div className="w-12 h-12 rounded-full overflow-hidden bg-neutral-800 flex-shrink-0">
                     {person.profilePic ? (
@@ -505,18 +549,34 @@ function FollowersModal({ title, people, onClose, loading, onFollowStateChange }
                     <div className="text-sm font-semibold text-white truncate">{person.userName}</div>
                     <div className="text-xs text-gray-400 truncate">{person.profileName || person.fullName || ''}</div>
                   </div>
-                  {person.userName !== user?.userName && (
-                    <button
-                      onClick={() => toggleFollow(person.userName, person.isFollowing)}
-                      className={`text-sm font-semibold px-4 py-2 rounded-lg transition ${
-                        person.isFollowing
-                          ? 'bg-neutral-900 border border-neutral-800 text-white'
-                          : 'bg-blue-500 text-white hover:bg-blue-600'
-                      }`}
-                    >
-                      {person.isFollowing ? 'Following' : 'Follow'}
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {mode === 'following' && person.userName !== user?.userName && (
+                      <button
+                        onClick={() => toggleFollow(person.userName, person.isFollowing)}
+                        className={`text-sm font-semibold px-4 py-2 rounded-lg transition ${
+                          person.isFollowing
+                            ? 'bg-neutral-900 border border-neutral-800 text-white'
+                            : 'bg-blue-500 text-white hover:bg-blue-600'
+                        }`}
+                      >
+                        {person.isFollowing ? 'Following' : 'Follow'}
+                      </button>
+                    )}
+                    {mode === 'followers' && person.userName !== user?.userName && (
+                      <button
+                        type="button"
+                        onClick={() => removeFollower(person.userName)}
+                        disabled={removingMap[person.userName]}
+                        className={`text-sm font-semibold px-4 py-2 rounded-lg text-white transition ${
+                          removingMap[person.userName]
+                            ? 'bg-red-500/60 cursor-not-allowed'
+                            : 'bg-red-500 hover:bg-red-600'
+                        }`}
+                      >
+                        {removingMap[person.userName] ? 'Removing...' : 'Remove'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

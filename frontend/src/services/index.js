@@ -14,6 +14,7 @@ export const profileService = {
   updateProfile: (data) => api.put('/profile/edit', data),
   followUser: (targetUserName) => api.post('/profile/follow', { targetUserName }),
   unfollowUser: (targetUserName) => api.post('/profile/unfollow', { targetUserName }),
+  removeFollower: (targetUserName) => api.post('/profile/remove-follower', { targetUserName }),
   getFollowers: (userName) => api.get(`/profile/${userName}/followers`),
   getFollowing: (userName) => api.get(`/profile/${userName}/following`),
 };

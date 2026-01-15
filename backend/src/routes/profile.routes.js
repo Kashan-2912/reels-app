@@ -4,6 +4,7 @@ const {
     updateProfile,
     followUser,
     unfollowUser,
+    removeFollower,
     getFollowers,
     getFollowing,
     getOwnProfile
@@ -17,6 +18,7 @@ router.get('/me/profile', verifyToken, getOwnProfile);
 router.put('/edit', verifyToken, updateProfile);
 router.post('/follow', verifyToken, followUser);
 router.post('/unfollow', verifyToken, unfollowUser);
+router.post('/remove-follower', verifyToken, removeFollower);
 
 // Public routes - PARAMETERIZED ROUTES LAST
 router.get('/view/:userName', getProfile);

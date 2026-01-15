@@ -273,6 +273,63 @@ async function unfollowUser(req, res) {
     }
 }
 
+// Remove a follower from current user's followers list
+async function removeFollower(req, res) {
+    try {
+        const currentUserId = req.userId;
+        const { targetUserName } = req.body;
+
+        if (!targetUserName || targetUserName.trim() === '') {
+            return res.status(400).json({ message: 'Target username is required.' });
+        }
+
+        const currentUser = await userModel.findById(currentUserId);
+        if (!currentUser) {
+            return res.status(404).json({ message: 'Current user not found.' });
+        }
+
+        const targetUser = await userModel.findOne({ userName: targetUserName.toLowerCase() });
+        if (!targetUser) {
+            return res.status(404).json({ message: 'Target user not found.' });
+        }
+
+        const followerIndex = currentUser.followers.findIndex(
+            follower => follower.userId.toString() === targetUser._id.toString()
+        );
+
+        if (followerIndex === -1) {
+            return res.status(400).json({ message: 'User is not a follower.' });
+        }
+
+        // Remove target from current user's followers
+        currentUser.followers.splice(followerIndex, 1);
+        currentUser.followersCount = Math.max(0, currentUser.followersCount - 1);
+
+        // Remove current user from target user's following
+        const followingIndex = targetUser.following.findIndex(
+            follow => follow.userId.toString() === currentUser._id.toString()
+        );
+
+        if (followingIndex !== -1) {
+            targetUser.following.splice(followingIndex, 1);
+            targetUser.followingCount = Math.max(0, targetUser.followingCount - 1);
+        }
+
+        await currentUser.save();
+        await targetUser.save();
+
+        return res.status(200).json({
+            message: `Removed ${targetUser.userName} from followers`,
+            followersCount: currentUser.followersCount,
+            targetUserFollowingCount: targetUser.followingCount
+        });
+
+    } catch (error) {
+        console.error('Error removing follower:', error);
+        return res.status(500).json({ message: 'Internal server error while removing follower.' });
+    }
+}
+
 // Get followers list
 async function getFollowers(req, res) {
     try {
@@ -376,6 +433,7 @@ module.exports = {
     updateProfile,
     followUser,
     unfollowUser,
+    removeFollower,
     getFollowers,
     getFollowing,
     getOwnProfile
