@@ -52,9 +52,9 @@ export default function StoriesSection({ stories = [], onAddStory }) {
         </button>
 
         {/* Stories */}
-        {stories.map((story) => (
+        {stories.map((story, index) => (
           <StoryThumbnail
-            key={story.id}
+            key={index}
             story={story}
             isHovered={hoveredStory === story.id}
             onHover={() => setHoveredStory(story.id)}
