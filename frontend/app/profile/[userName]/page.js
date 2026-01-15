@@ -201,8 +201,8 @@ export default function ProfilePage() {
                     <button
                       onClick={isFollowing ? handleUnfollow : handleFollow}
                       className={`px-4 py-1.5 rounded-lg text-sm font-semibold ${isFollowing
-                          ? 'bg-neutral-900 border border-neutral-800'
-                          : 'bg-blue-500 hover:bg-blue-600 text-white'
+                        ? 'bg-neutral-900 border border-neutral-800'
+                        : 'bg-blue-500 hover:bg-blue-600 text-white'
                         }`}
                     >
                       {isFollowing ? 'Following' : 'Follow'}
@@ -226,7 +226,9 @@ export default function ProfilePage() {
               </div>
 
               <div className="flex gap-4 mt-3">
-                <HighlightBubble label="New" />
+                {isOwnProfile && (
+                  <HighlightBubble label="New" />
+                )}
               </div>
             </div>
           </section>
@@ -553,11 +555,10 @@ function FollowersModal({ title, people, onClose, loading, onFollowStateChange, 
                     {mode === 'following' && person.userName !== user?.userName && (
                       <button
                         onClick={() => toggleFollow(person.userName, person.isFollowing)}
-                        className={`text-sm font-semibold px-4 py-2 rounded-lg transition ${
-                          person.isFollowing
+                        className={`text-sm font-semibold px-4 py-2 rounded-lg transition ${person.isFollowing
                             ? 'bg-neutral-900 border border-neutral-800 text-white'
                             : 'bg-blue-500 text-white hover:bg-blue-600'
-                        }`}
+                          }`}
                       >
                         {person.isFollowing ? 'Following' : 'Follow'}
                       </button>
@@ -567,11 +568,10 @@ function FollowersModal({ title, people, onClose, loading, onFollowStateChange, 
                         type="button"
                         onClick={() => removeFollower(person.userName)}
                         disabled={removingMap[person.userName]}
-                        className={`text-sm font-semibold px-4 py-2 rounded-lg text-white transition ${
-                          removingMap[person.userName]
+                        className={`text-sm font-semibold px-4 py-2 rounded-lg text-white transition ${removingMap[person.userName]
                             ? 'bg-red-500/60 cursor-not-allowed'
                             : 'bg-red-500 hover:bg-red-600'
-                        }`}
+                          }`}
                       >
                         {removingMap[person.userName] ? 'Removing...' : 'Remove'}
                       </button>
