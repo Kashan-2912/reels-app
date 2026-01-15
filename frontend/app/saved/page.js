@@ -11,20 +11,21 @@ import { savedService, postService } from '@/src/services';
 
 export default function SavedPostsPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, isInitialized } = useAuthStore();
   const [savedPosts, setSavedPosts] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState('grid'); // grid or list
   const [filterTab, setFilterTab] = useState('all'); // all, photos, videos
 
   useEffect(() => {
+    if (!isInitialized) return;
     if (!user) {
       router.push('/login');
       return;
     }
 
     fetchSavedPosts();
-  }, [user, router]);
+  }, [user, isInitialized, router]);
 
   const fetchSavedPosts = async () => {
     try {

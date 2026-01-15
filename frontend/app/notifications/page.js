@@ -11,19 +11,20 @@ import { notificationService } from '@/src/services';
 
 export default function NotificationsPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, isInitialized } = useAuthStore();
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all'); // all, likes, comments, follows
 
   useEffect(() => {
+    if (!isInitialized) return;
     if (!user) {
       router.push('/login');
       return;
     }
 
     fetchNotifications();
-  }, [user, router]);
+  }, [user, isInitialized, router]);
 
   const fetchNotifications = async () => {
     try {

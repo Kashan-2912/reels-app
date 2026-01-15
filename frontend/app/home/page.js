@@ -11,7 +11,7 @@ import { useFeedStore } from '@/src/store/feedStore';
 
 export default function HomePage() {
   const router = useRouter();
-  const { user, initAuth } = useAuthStore();
+  const { user, isInitialized, initAuth } = useAuthStore();
   const { posts, isLoading, hasMore, currentPage, getHomeFeed, clearFeed } = useFeedStore();
   const [stories, setStories] = useState([]);
   const [isLoadingStories, setIsLoadingStories] = useState(true);
@@ -23,6 +23,8 @@ export default function HomePage() {
   }, [initAuth]);
 
   useEffect(() => {
+    if (!isInitialized) return;
+
     if (!user) {
       router.push('/login');
       return;
@@ -47,7 +49,7 @@ export default function HomePage() {
       toast.error('Failed to load feed');
     });
     loadStories();
-  }, [user]);
+  }, [user, isInitialized]);
 
   const loadMore = useCallback(async () => {
     if (isLoading || !hasMore || loadingRef.current) return;

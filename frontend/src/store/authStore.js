@@ -5,6 +5,7 @@ export const useAuthStore = create((set) => ({
   user: null,
   isLoading: false,
   error: null,
+  isInitialized: false,
 
   // Load user from localStorage or revalidate via API (cookie-based session)
   initAuth: async () => {
@@ -16,7 +17,7 @@ export const useAuthStore = create((set) => ({
 
       const savedUser = localStorage.getItem('user');
       if (savedUser) {
-        set({ user: JSON.parse(savedUser), isLoading: false });
+        set({ user: JSON.parse(savedUser), isLoading: false, isInitialized: true });
         return;
       }
 
@@ -25,15 +26,15 @@ export const useAuthStore = create((set) => ({
       const user = response.data?.user || response.data;
       if (user) {
         localStorage.setItem('user', JSON.stringify(user));
-        set({ user, isLoading: false });
+        set({ user, isLoading: false, isInitialized: true });
         return;
       }
 
-      set({ user: null, isLoading: false });
+      set({ user: null, isLoading: false, isInitialized: true });
     } catch (error) {
       // If session is invalid, clear any stale data and keep user logged out
       localStorage.removeItem('user');
-      set({ user: null, isLoading: false });
+      set({ user: null, isLoading: false, isInitialized: true });
     }
   },
 
@@ -44,7 +45,7 @@ export const useAuthStore = create((set) => ({
       const response = await authService.register(userData);
       const user = response.data.user;
       localStorage.setItem('user', JSON.stringify(user));
-      set({ user, isLoading: false });
+      set({ user, isLoading: false, isInitialized: true });
       return response.data;
     } catch (error) {
       const errorMsg = error.response?.data?.message || 'Registration failed';
@@ -60,7 +61,7 @@ export const useAuthStore = create((set) => ({
       const response = await authService.login(credentials);
       const user = response.data.user;
       localStorage.setItem('user', JSON.stringify(user));
-      set({ user, isLoading: false });
+      set({ user, isLoading: false, isInitialized: true });
       return response.data;
     } catch (error) {
       const errorMsg = error.response?.data?.message || 'Login failed';
@@ -75,7 +76,7 @@ export const useAuthStore = create((set) => ({
     try {
       await authService.logout();
       localStorage.removeItem('user');
-      set({ user: null, isLoading: false });
+      set({ user: null, isLoading: false, isInitialized: true });
     } catch (error) {
       set({ error: 'Logout failed', isLoading: false });
       throw error;

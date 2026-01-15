@@ -12,18 +12,24 @@ export default function ProfilePage() {
   const params = useParams();
   const router = useRouter();
   const { userName } = params;
-  const { user } = useAuthStore();
+  const { user, isInitialized } = useAuthStore();
   const { profile, isLoading, getProfile, followUser, unfollowUser } = useProfileStore();
   const [posts, setPosts] = useState([]);
   const [isFollowing, setIsFollowing] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
+    if (!isInitialized) return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
     if (userName) {
       getProfile(userName);
       fetchUserPosts();
     }
-  }, [userName]);
+  }, [userName, isInitialized, user]);
 
   useEffect(() => {
     if (profile && user) {

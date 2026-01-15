@@ -10,7 +10,7 @@ import { searchService, hashtagService, profileService } from '@/src/services';
 
 export default function SearchPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, isInitialized } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('users'); // users, posts, hashtags
   const [searchResults, setSearchResults] = useState([]);
@@ -18,6 +18,7 @@ export default function SearchPage() {
   const [recentSearches, setRecentSearches] = useState([]);
 
   useEffect(() => {
+    if (!isInitialized) return;
     if (!user) {
       router.push('/login');
       return;
@@ -28,7 +29,7 @@ export default function SearchPage() {
     if (saved) {
       setRecentSearches(JSON.parse(saved));
     }
-  }, [user, router]);
+  }, [user, isInitialized, router]);
 
   const handleSearch = async (query) => {
     if (!query.trim()) {

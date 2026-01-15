@@ -11,7 +11,7 @@ import { hashtagService } from '@/src/services';
 
 export default function HashtagPage() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, isInitialized } = useAuthStore();
   const params = useParams();
   const hashtag = params?.hashtag;
   
@@ -21,6 +21,7 @@ export default function HashtagPage() {
   const [isFollowingHashtag, setIsFollowingHashtag] = useState(false);
 
   useEffect(() => {
+    if (!isInitialized) return;
     if (!user) {
       router.push('/login');
       return;
@@ -29,7 +30,7 @@ export default function HashtagPage() {
     if (hashtag) {
       fetchHashtagData();
     }
-  }, [user, hashtag, router]);
+  }, [user, isInitialized, hashtag, router]);
 
   const fetchHashtagData = async () => {
     try {
