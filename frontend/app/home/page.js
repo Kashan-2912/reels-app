@@ -111,10 +111,12 @@ export default function HomePage() {
           <div className="space-y-8">
             <div className="px-3 text-2xl font-semibold tracking-tight">Instagram</div>
             <nav className="space-y-1">
-              {navItems.map((item) => (
+              {navItems.map((item) => {
+                const resolvedHref = item.href ?? (user?.userName ? `/profile/${user.userName}` : '/profile');
+                return (
                 <a
                   key={item.label}
-                  href={item.href}
+                  href={resolvedHref}
                   className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition hover:bg-neutral-900 ${
                     item.active ? 'font-semibold' : 'text-gray-300'
                   }`}
@@ -122,7 +124,8 @@ export default function HomePage() {
                   <item.icon size={20} />
                   <span>{item.label}</span>
                 </a>
-              ))}
+                );
+              })}
             </nav>
           </div>
           <button className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-gray-300 hover:bg-neutral-900 transition">
@@ -216,7 +219,8 @@ const navItems = [
   { label: 'Messages', href: '#', icon: FiMessageCircle },
   { label: 'Notifications', href: '/notifications', icon: FiHeart },
   { label: 'Create', href: '/post/new', icon: FiPlusSquare },
-  { label: 'Profile', href: '/profile', icon: FiUser },
+  // resolved at runtime to avoid 404 on /profile
+  { label: 'Profile', href: null, icon: FiUser },
 ];
 
 const storyFallback = [

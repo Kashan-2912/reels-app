@@ -1,22 +1,47 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import {
+  FiHome,
+  FiSearch,
+  FiCompass,
+  FiPlay,
+  FiMessageCircle,
+  FiHeart,
+  FiPlusSquare,
+  FiUser,
+  FiMoreHorizontal,
+  FiEdit2,
+  FiUserPlus,
+  FiUserCheck,
+  FiSettings,
+  FiGrid,
+  FiBookmark,
+  FiTag,
+  FiCamera,
+} from 'react-icons/fi';
+import toast from 'react-hot-toast';
 import { useProfileStore } from '@/src/store/profileStore';
 import { useAuthStore } from '@/src/store/authStore';
-import { postService, profileService } from '@/src/services';
-import toast from 'react-hot-toast';
-import { FiEdit2, FiUserPlus, FiUserCheck } from 'react-icons/fi';
+import { postService } from '@/src/services';
 
 export default function ProfilePage() {
   const params = useParams();
   const router = useRouter();
-  const { userName } = params;
-  const { user, isInitialized } = useAuthStore();
+  const userNameParam = Array.isArray(params?.userName) ? params.userName[0] : params?.userName;
+
+  const { user, isInitialized, initAuth } = useAuthStore();
   const { profile, isLoading, getProfile, followUser, unfollowUser } = useProfileStore();
+
   const [posts, setPosts] = useState([]);
-  const [isFollowing, setIsFollowing] = useState(false);
+  // const [isFollowing, setIsFollowing] = useState(false);
+  const [activeTab, setActiveTab] = useState('posts');
   const [showEditModal, setShowEditModal] = useState(false);
+
+  useEffect(() => {
+    initAuth();
+  }, [initAuth]);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -25,35 +50,41 @@ export default function ProfilePage() {
       return;
     }
 
-    if (userName) {
-      getProfile(userName);
-      fetchUserPosts();
-    }
-  }, [userName, isInitialized, user]);
-
-  useEffect(() => {
-    if (profile && user) {
-      const isUserFollowing = profile.followers?.some(
-        (follower) => follower.userId === user.id
-      );
-      setIsFollowing(isUserFollowing);
-    }
-  }, [profile, user]);
-
-  const fetchUserPosts = async () => {
+    const fetchUserPosts = async () => {
     try {
-      const response = await postService.getUserPosts(userName, 1, 20);
-      setPosts(response.data.posts);
+      const response = await postService.getUserPosts(userNameParam, 1, 30);
+      setPosts(response.data?.posts || []);
     } catch (error) {
       toast.error('Failed to load posts');
     }
   };
 
+    const load = async () => {
+      try {
+        await getProfile(userNameParam);
+        await fetchUserPosts();
+      } catch (error) {
+        toast.error('Failed to load profile');
+      }
+    };
+
+    if (userNameParam) load();
+  }, [userNameParam, isInitialized, user, getProfile, router]);
+
+  const isFollowing = useMemo(() => {
+  if (!profile || !user) return false;
+
+  return profile.followers?.some(
+    (follower) => follower.userId === user.id
+  );
+}, [profile, user]);
+
+
   const handleFollow = async () => {
     try {
       await followUser(profile.userName);
       setIsFollowing(true);
-      toast.success('Following!');
+      toast.success('Following');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to follow');
     }
@@ -69,103 +100,222 @@ export default function ProfilePage() {
     }
   };
 
-  if (isLoading) return <div className="p-8 text-center">Loading...</div>;
-  if (!profile) return <div className="p-8 text-center">User not found</div>;
+  const navItems = useMemo(
+    () => [
+      { label: 'Home', href: '/home', icon: FiHome },
+      { label: 'Search', href: '/search', icon: FiSearch },
+      { label: 'Explore', href: '/explore', icon: FiCompass },
+      { label: 'Reels', href: '/reels', icon: FiPlay },
+      { label: 'Messages', href: '#', icon: FiMessageCircle },
+      { label: 'Notifications', href: '/notifications', icon: FiHeart },
+      { label: 'Create', href: '/post/new', icon: FiPlusSquare },
+      { label: 'Profile', href: user?.userName ? `/profile/${user.userName}` : '/profile', icon: FiUser, active: true },
+    ],
+    [user]
+  );
 
-  const isOwnProfile = user?.userName === userName;
+  if (!isInitialized) return <div className="p-8 text-center text-gray-400">Loading...</div>;
+  if (isLoading) return <div className="p-8 text-center text-gray-400">Loading profile...</div>;
+  if (!profile) return <div className="p-8 text-center text-gray-400">User not found</div>;
+
+  const isOwnProfile = user?.userName === userNameParam;
 
   return (
-    <div className="max-w-4xl mx-auto p-8">
-      {/* Profile Header */}
-      <div className="flex gap-8 mb-12 pb-8 border-b border-gray-200 dark:border-gray-800">
-        <div className="w-32 h-32 rounded-full overflow-hidden bg-gray-200 dark:bg-gray-800 flex-shrink-0">
-          {profile.profilePic ? (
-            <img src={profile.profilePic} alt={profile.userName} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400">No photo</div>
-          )}
-        </div>
-
-        <div className="flex-1">
-          <div className="flex items-center gap-4 mb-4">
-            <h1 className="text-3xl font-bold text-black dark:text-white">{profile.profileName}</h1>
-            {isOwnProfile ? (
-              <button
-                onClick={() => setShowEditModal(true)}
-                className="flex items-center gap-2 px-6 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition"
-              >
-                <FiEdit2 /> Edit Profile
-              </button>
-            ) : (
-              <button
-                onClick={isFollowing ? handleUnfollow : handleFollow}
-                className={`flex items-center gap-2 px-6 py-2 rounded-lg transition ${
-                  isFollowing
-                    ? 'bg-gray-200 dark:bg-gray-800 text-black dark:text-white hover:bg-gray-300 dark:hover:bg-gray-700'
-                    : 'bg-red-500 hover:bg-red-600 text-white'
-                }`}
-              >
-                {isFollowing ? (
-                  <>
-                    <FiUserCheck /> Following
-                  </>
-                ) : (
-                  <>
-                    <FiUserPlus /> Follow
-                  </>
-                )}
-              </button>
-            )}
+    <div className="min-h-screen bg-[#0f0f0f] text-white">
+      <div className="max-w-7xl mx-auto flex">
+        <aside className="hidden lg:flex w-64 flex-col justify-between py-8 pr-8 border-r border-neutral-900 sticky top-0 h-screen">
+          <div className="space-y-8">
+            <div className="px-3 text-2xl font-semibold tracking-tight">Instagram</div>
+            <nav className="space-y-1">
+              {navItems.map((item) => (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition hover:bg-neutral-900 ${
+                    item.active ? 'font-semibold' : 'text-gray-300'
+                  }`}
+                >
+                  <item.icon size={20} />
+                  <span>{item.label}</span>
+                </a>
+              ))}
+            </nav>
           </div>
+          <button className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-gray-300 hover:bg-neutral-900 transition">
+            <FiMoreHorizontal size={20} />
+            More
+          </button>
+        </aside>
 
-          <p className="text-gray-600 dark:text-gray-400 mb-4">@{profile.userName}</p>
-          <p className="text-gray-700 dark:text-gray-300 mb-4">{profile.description}</p>
-
-          <div className="flex gap-8">
-            <div>
-              <div className="text-2xl font-bold text-black dark:text-white">{profile.postsCount}</div>
-              <div className="text-gray-600 dark:text-gray-400 text-sm">Posts</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-black dark:text-white">{profile.followersCount}</div>
-              <div className="text-gray-600 dark:text-gray-400 text-sm">Followers</div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold text-black dark:text-white">{profile.followingCount}</div>
-              <div className="text-gray-600 dark:text-gray-400 text-sm">Following</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Posts Grid */}
-      <div>
-        <h2 className="text-xl font-bold text-black dark:text-white mb-6">Posts</h2>
-        {posts.length > 0 ? (
-          <div className="grid grid-cols-3 gap-4">
-            {posts.map((post) => (
-              <div
-                key={post.id}
-                className="aspect-square bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden cursor-pointer hover:opacity-80 transition"
-                onClick={() => router.push(`/post/${post.id}`)}
-              >
-                {post.photos?.[0] ? (
-                  <img src={post.photos[0]} alt="Post" className="w-full h-full object-cover" />
-                ) : post.video ? (
-                  <video src={post.video} className="w-full h-full object-cover" />
+        <main className="flex-1 px-4 md:px-10 py-8">
+          <section className="flex flex-col md:flex-row md:items-start gap-10 pb-8 border-b border-neutral-900">
+            <div className="flex justify-center md:justify-start w-full md:w-auto">
+              <div className="relative h-36 w-36 md:h-44 md:w-44 rounded-full overflow-hidden bg-neutral-800">
+                {profile.profilePic ? (
+                  <img src={profile.profilePic} alt={profile.userName} className="h-full w-full object-cover" />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">No media</div>
+                  <div className="h-full w-full flex items-center justify-center text-gray-500 text-4xl">👤</div>
                 )}
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12 text-gray-500">No posts yet</div>
-        )}
+            </div>
+
+            <div className="flex-1 space-y-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-2xl font-semibold">{profile.userName}</h1>
+                {isOwnProfile ? (
+                  <>
+                    <button
+                      onClick={() => setShowEditModal(true)}
+                      className="px-4 py-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-sm font-semibold"
+                    >
+                      Edit profile
+                    </button>
+                    <button className="px-4 py-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-sm font-semibold">
+                      View archive
+                    </button>
+                    <button className="p-2 rounded-lg bg-neutral-900 border border-neutral-800">
+                      <FiSettings size={18} />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={isFollowing ? handleUnfollow : handleFollow}
+                      className={`px-4 py-1.5 rounded-lg text-sm font-semibold ${
+                        isFollowing
+                          ? 'bg-neutral-900 border border-neutral-800'
+                          : 'bg-blue-500 hover:bg-blue-600 text-white'
+                      }`}
+                    >
+                      {isFollowing ? 'Following' : 'Follow'}
+                    </button>
+                    <button className="px-4 py-1.5 rounded-lg bg-neutral-900 border border-neutral-800 text-sm font-semibold">
+                      Message
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <div className="flex gap-8 text-sm">
+                <Stat label="posts" value={profile.postsCount} />
+                <Stat label="followers" value={profile.followersCount} />
+                <Stat label="following" value={profile.followingCount} />
+              </div>
+
+              <div className="space-y-1">
+                <div className="font-semibold text-sm">{profile.profileName}</div>
+                {profile.description && <div className="text-sm text-gray-300 whitespace-pre-line">{profile.description}</div>}
+              </div>
+
+              <div className="flex gap-4 mt-3">
+                <HighlightBubble label="New" />
+              </div>
+            </div>
+          </section>
+
+          <section className="mt-6">
+            <div className="flex items-center justify-center gap-10 text-xs uppercase tracking-[0.2em] text-gray-400 border-t border-neutral-900">
+              <TabButton icon={FiGrid} label="Posts" active={activeTab === 'posts'} onClick={() => setActiveTab('posts')} />
+              <TabButton icon={FiBookmark} label="Saved" active={activeTab === 'saved'} onClick={() => setActiveTab('saved')} />
+              <TabButton icon={FiTag} label="Tagged" active={activeTab === 'tagged'} onClick={() => setActiveTab('tagged')} />
+            </div>
+
+            {activeTab === 'posts' && (
+              <PostGrid posts={posts} onOpen={(id) => router.push(`/post/${id}`)} />
+            )}
+
+            {activeTab !== 'posts' && (
+              <EmptyState
+                title={activeTab === 'saved' ? 'Save' : 'Tag'}
+                description={activeTab === 'saved' ? 'Save photos and videos to see them here.' : 'When people tag you, they will appear here.'}
+              />
+            )}
+          </section>
+        </main>
       </div>
 
-      {/* Edit Profile Modal */}
       {showEditModal && <EditProfileModal profile={profile} onClose={() => setShowEditModal(false)} />}
+    </div>
+  );
+}
+
+function Stat({ label, value }) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="font-semibold text-white">{value ?? 0}</span>
+      <span className="text-gray-400">{label}</span>
+    </div>
+  );
+}
+
+function HighlightBubble({ label }) {
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <div className="h-16 w-16 rounded-full border border-neutral-800 bg-neutral-900 flex items-center justify-center text-gray-400">+
+      </div>
+      <span className="text-xs text-gray-400">{label}</span>
+    </div>
+  );
+}
+
+function TabButton({ icon: Icon, label, active, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-2 py-4 px-4 border-t-2 ${
+        active ? 'border-white text-white' : 'border-transparent text-gray-500'
+      }`}
+    >
+      <Icon size={16} />
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function PostGrid({ posts, onOpen }) {
+  if (!posts || posts.length === 0) {
+    return (
+      <EmptyState
+        title="Share Photos"
+        description="When you share photos, they will appear on your profile."
+        actionLabel="Share your first photo"
+      />
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-3 gap-1 md:gap-2 mt-6">
+      {posts.map((post) => {
+        const postId = post.id || post._id;
+        return (
+          <button
+            key={postId}
+            onClick={() => onOpen(postId)}
+            className="relative aspect-square bg-neutral-900 overflow-hidden group"
+          >
+            {post.photos?.[0] ? (
+              <img src={post.photos[0]} alt="Post" className="h-full w-full object-cover group-hover:scale-105 transition" />
+            ) : post.video ? (
+              <video src={post.video} className="h-full w-full object-cover" />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center text-gray-500">No media</div>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function EmptyState({ title, description, actionLabel }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center text-gray-300">
+      <div className="h-20 w-20 rounded-full border border-neutral-800 flex items-center justify-center mb-4">
+        <FiCamera size={28} />
+      </div>
+      <h3 className="text-xl font-semibold mb-2">{title}</h3>
+      <p className="text-sm text-gray-400 max-w-md">{description}</p>
+      {actionLabel && <button className="mt-4 text-sm font-semibold text-blue-400">{actionLabel}</button>}
     </div>
   );
 }
@@ -187,7 +337,7 @@ function EditProfileModal({ profile, onClose }) {
     e.preventDefault();
     try {
       await updateProfile(formData);
-      toast.success('Profile updated!');
+      toast.success('Profile updated');
       onClose();
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to update profile');
@@ -195,63 +345,57 @@ function EditProfileModal({ profile, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-900 p-8 rounded-lg max-w-md w-full">
-        <h2 className="text-2xl font-bold text-black dark:text-white mb-6">Edit Profile</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+      <div className="bg-[#111] border border-neutral-800 p-6 rounded-2xl w-full max-w-md text-white">
+        <h2 className="text-xl font-semibold mb-4">Edit profile</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Profile Name
-            </label>
+            <label className="block text-sm text-gray-400 mb-1">Profile name</label>
             <input
               type="text"
               name="profileName"
               value={formData.profileName}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Bio
-            </label>
+            <label className="block text-sm text-gray-400 mb-1">Bio</label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
               maxLength={500}
-              rows="4"
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+              rows={3}
+              className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Profile Picture URL
-            </label>
+            <label className="block text-sm text-gray-400 mb-1">Profile picture URL</label>
             <input
               type="text"
               name="profilePic"
               value={formData.profilePic}
               onChange={handleChange}
               placeholder="https://..."
-              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+              className="w-full px-3 py-2 rounded-lg bg-neutral-900 border border-neutral-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex gap-3 pt-2">
             <button
               type="submit"
-              className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-lg transition"
+              className="flex-1 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 font-semibold text-white transition"
             >
               Save
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 bg-gray-200 dark:bg-gray-700 text-black dark:text-white font-semibold py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+              className="flex-1 py-2 rounded-lg bg-neutral-900 border border-neutral-800 font-semibold text-white hover:bg-neutral-800 transition"
             >
               Cancel
             </button>
