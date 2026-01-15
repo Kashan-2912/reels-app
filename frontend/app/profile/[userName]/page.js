@@ -6,7 +6,7 @@ import { FiEdit2, FiSettings, FiGrid, FiBookmark, FiTag, FiCamera } from 'react-
 import toast from 'react-hot-toast';
 import { useProfileStore } from '@/src/store/profileStore';
 import { useAuthStore } from '@/src/store/authStore';
-import { postService } from '@/src/services';
+import { postService, profileService } from '@/src/services';
 import Sidebar from '@/src/components/Sidebar';
 
 export default function ProfilePage() {
@@ -21,6 +21,12 @@ export default function ProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [activeTab, setActiveTab] = useState('posts');
   const [showEditModal, setShowEditModal] = useState(false);
+  const [followersModalOpen, setFollowersModalOpen] = useState(false);
+  const [followingModalOpen, setFollowingModalOpen] = useState(false);
+  const [followers, setFollowers] = useState([]);
+  const [following, setFollowing] = useState([]);
+  const [listLoading, setListLoading] = useState(false);
+  const [userFollowingLookup, setUserFollowingLookup] = useState([]);
 
   useEffect(() => {
     initAuth();
@@ -63,11 +69,17 @@ export default function ProfilePage() {
     setIsFollowing(Boolean(isUserFollowing));
   }, [profile, user]);
 
+  useEffect(() => {
+    const followingNames = user?.following?.map((f) => f.userName?.toLowerCase()) || [];
+    setUserFollowingLookup(followingNames);
+  }, [user]);
+
 
   const handleFollow = async () => {
     try {
       await followUser(profile.userName);
-      // setIsFollowing(true);
+      setIsFollowing(true);
+      updateFollowingLookup(profile.userName, true);
       toast.success('Following');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to follow');
@@ -77,10 +89,60 @@ export default function ProfilePage() {
   const handleUnfollow = async () => {
     try {
       await unfollowUser(profile.userName);
-      // setIsFollowing(false);
+      setIsFollowing(false);
+      updateFollowingLookup(profile.userName, false);
       toast.success('Unfollowed');
     } catch (error) {
       toast.error('Failed to unfollow');
+    }
+  };
+
+  const withFollowingState = (list = []) => {
+    const set = new Set(userFollowingLookup);
+    return list.map((person) => ({
+      ...person,
+      isFollowing: set.has((person.userName || '').toLowerCase()),
+    }));
+  };
+
+  const updateFollowingLookup = (targetUserName, nowFollowing) => {
+    const key = (targetUserName || '').toLowerCase();
+    setUserFollowingLookup((prev) => {
+      if (!key) return prev;
+      if (nowFollowing) {
+        return prev.includes(key) ? prev : [...prev, key];
+      }
+      return prev.filter((name) => name !== key);
+    });
+  };
+
+  const openFollowers = async () => {
+    setFollowersModalOpen(true);
+    setListLoading(true);
+    try {
+      const response = await profileService.getFollowers(userNameParam);
+      const list = withFollowingState(response.data?.followers || []);
+      setFollowers(list);
+    } catch (error) {
+      toast.error('Failed to load followers');
+      setFollowers([]);
+    } finally {
+      setListLoading(false);
+    }
+  };
+
+  const openFollowing = async () => {
+    setFollowingModalOpen(true);
+    setListLoading(true);
+    try {
+      const response = await profileService.getFollowing(userNameParam);
+      const list = withFollowingState(response.data?.following || []);
+      setFollowing(list);
+    } catch (error) {
+      toast.error('Failed to load following');
+      setFollowing([]);
+    } finally {
+      setListLoading(false);
     }
   };
 
@@ -129,11 +191,10 @@ export default function ProfilePage() {
                   <>
                     <button
                       onClick={isFollowing ? handleUnfollow : handleFollow}
-                      className={`px-4 py-1.5 rounded-lg text-sm font-semibold ${
-                        isFollowing
+                      className={`px-4 py-1.5 rounded-lg text-sm font-semibold ${isFollowing
                           ? 'bg-neutral-900 border border-neutral-800'
                           : 'bg-blue-500 hover:bg-blue-600 text-white'
-                      }`}
+                        }`}
                     >
                       {isFollowing ? 'Following' : 'Follow'}
                     </button>
@@ -146,8 +207,8 @@ export default function ProfilePage() {
 
               <div className="flex gap-8 text-sm">
                 <Stat label="posts" value={profile.postsCount} />
-                <Stat label="followers" value={profile.followersCount} />
-                <Stat label="following" value={profile.followingCount} />
+                <Stat label="followers" value={profile.followersCount} onClick={openFollowers} />
+                <Stat label="following" value={profile.followingCount} onClick={openFollowing} />
               </div>
 
               <div className="space-y-1">
@@ -175,7 +236,7 @@ export default function ProfilePage() {
             {activeTab !== 'posts' && (
               <EmptyState
                 title={activeTab === 'saved' ? 'Save' : 'Tag'}
-                description={activeTab === 'saved' ? 'Save photos and videos to see them here.' : 'When people tag you, they will appear here.'}
+                description={activeTab === 'saved' ? 'Save posts to see them here.' : 'When people tag you, they will appear here.'}
               />
             )}
           </section>
@@ -183,16 +244,38 @@ export default function ProfilePage() {
       </div>
 
       {showEditModal && <EditProfileModal profile={profile} onClose={() => setShowEditModal(false)} />}
+      {followersModalOpen && (
+        <FollowersModal
+          title="Followers"
+          people={followers}
+          loading={listLoading}
+          onClose={() => setFollowersModalOpen(false)}
+          onFollowStateChange={updateFollowingLookup}
+        />
+      )}
+      {followingModalOpen && (
+        <FollowersModal
+          title="Following"
+          people={following}
+          loading={listLoading}
+          onClose={() => setFollowingModalOpen(false)}
+          onFollowStateChange={updateFollowingLookup}
+        />
+      )}
     </div>
   );
 }
 
-function Stat({ label, value }) {
+function Stat({ label, value, onClick }) {
   return (
-    <div className="flex items-center gap-2">
+    <button
+      onClick={onClick}
+      className={`flex items-center gap-2 ${onClick ? 'hover:opacity-80 transition' : ''}`}
+      disabled={!onClick}
+    >
       <span className="font-semibold text-white">{value ?? 0}</span>
-      <span className="text-gray-400">{label}</span>
-    </div>
+      <span className="text-gray-400 capitalize">{label}</span>
+    </button>
   );
 }
 
@@ -210,9 +293,8 @@ function TabButton({ icon: Icon, label, active, onClick }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-2 py-4 px-4 border-t-2 ${
-        active ? 'border-white text-white' : 'border-transparent text-gray-500'
-      }`}
+      className={`flex items-center gap-2 py-4 px-4 border-t-2 ${active ? 'border-white text-white' : 'border-transparent text-gray-500'
+        }`}
     >
       <Icon size={16} />
       <span>{label}</span>
@@ -224,9 +306,9 @@ function PostGrid({ posts, onOpen }) {
   if (!posts || posts.length === 0) {
     return (
       <EmptyState
-        title="Share Photos"
-        description="When you share photos, they will appear on your profile."
-        actionLabel="Share your first photo"
+        title="Share Posts"
+        description="When you share posts, they will appear on your profile."
+        actionLabel="Share your first post"
       />
     );
   }
@@ -349,6 +431,97 @@ function EditProfileModal({ profile, onClose }) {
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  );
+}
+
+function FollowersModal({ title, people, onClose, loading, onFollowStateChange }) {
+  const { user } = useAuthStore();
+  const [list, setList] = useState(people || []);
+
+  useEffect(() => {
+    setList(people || []);
+  }, [people]);
+
+  const toggleFollow = async (targetUserName, currentlyFollowing) => {
+    try {
+      if (currentlyFollowing) {
+        await profileService.unfollowUser(targetUserName);
+      } else {
+        await profileService.followUser(targetUserName);
+      }
+      setList((prev) =>
+        prev.map((p) =>
+          p.userName === targetUserName ? { ...p, isFollowing: !currentlyFollowing } : p
+        )
+      );
+      if (onFollowStateChange) onFollowStateChange(targetUserName, !currentlyFollowing);
+    } catch (error) {
+      toast.error('Action failed');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4">
+      <div className="w-full max-w-xl bg-[#111] border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-center relative py-4 border-b border-neutral-800">
+          <h3 className="text-white font-semibold">{title}</h3>
+          <button
+            onClick={onClose}
+            className="absolute right-4 top-3 text-gray-400 hover:text-white text-xl"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="px-4 py-3 border-b border-neutral-800">
+          <input
+            type="text"
+            placeholder="Search"
+            className="w-full rounded-lg bg-neutral-900 border border-neutral-800 px-3 py-2 text-sm text-white placeholder-gray-500"
+            disabled
+          />
+        </div>
+
+        <div className="max-h-[420px] overflow-y-auto">
+          {loading ? (
+            <div className="py-8 text-center text-gray-400">Loading...</div>
+          ) : list.length === 0 ? (
+            <div className="py-8 text-center text-gray-400">No users to show</div>
+          ) : (
+            <div className="divide-y divide-neutral-900">
+              {list.map((person) => (
+                <div key={person.userName} className="flex items-center gap-3 px-4 py-3">
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-neutral-800 flex-shrink-0">
+                    {person.profilePic ? (
+                      <img src={person.profilePic} alt={person.userName} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-500">👤</div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-white truncate">{person.userName}</div>
+                    <div className="text-xs text-gray-400 truncate">{person.profileName || person.fullName || ''}</div>
+                  </div>
+                  {person.userName !== user?.userName && (
+                    <button
+                      onClick={() => toggleFollow(person.userName, person.isFollowing)}
+                      className={`text-sm font-semibold px-4 py-2 rounded-lg transition ${
+                        person.isFollowing
+                          ? 'bg-neutral-900 border border-neutral-800 text-white'
+                          : 'bg-blue-500 text-white hover:bg-blue-600'
+                      }`}
+                    >
+                      {person.isFollowing ? 'Following' : 'Follow'}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -14,10 +14,15 @@ import {
 } from 'react-icons/fi';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/src/store/authStore';
+import { LogOut } from 'lucide-react';
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
+
+  const handleLogout = async () => {
+    await logout();
+  }
 
   const navItems = useMemo(() => {
     const profileHref = user?.userName ? `/profile/${user.userName}` : '/profile';
@@ -55,9 +60,9 @@ export default function Sidebar() {
           })}
         </nav>
       </div>
-      <button className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-gray-300 hover:bg-neutral-900 transition">
-        <FiMoreHorizontal size={20} />
-        More
+      <button onClick={handleLogout} className="flex cursor-pointer items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-gray-300 hover:bg-neutral-900 transition">
+        <LogOut size={20} color='red' />
+        Logout
       </button>
     </aside>
   );
