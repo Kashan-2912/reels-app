@@ -1,30 +1,13 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import {
-  FiHome,
-  FiSearch,
-  FiCompass,
-  FiPlay,
-  FiMessageCircle,
-  FiHeart,
-  FiPlusSquare,
-  FiUser,
-  FiMoreHorizontal,
-  FiEdit2,
-  FiUserPlus,
-  FiUserCheck,
-  FiSettings,
-  FiGrid,
-  FiBookmark,
-  FiTag,
-  FiCamera,
-} from 'react-icons/fi';
+import { FiEdit2, FiSettings, FiGrid, FiBookmark, FiTag, FiCamera } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { useProfileStore } from '@/src/store/profileStore';
 import { useAuthStore } from '@/src/store/authStore';
 import { postService } from '@/src/services';
+import Sidebar from '@/src/components/Sidebar';
 
 export default function ProfilePage() {
   const params = useParams();
@@ -35,7 +18,7 @@ export default function ProfilePage() {
   const { profile, isLoading, getProfile, followUser, unfollowUser } = useProfileStore();
 
   const [posts, setPosts] = useState([]);
-  // const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
   const [activeTab, setActiveTab] = useState('posts');
   const [showEditModal, setShowEditModal] = useState(false);
 
@@ -51,13 +34,13 @@ export default function ProfilePage() {
     }
 
     const fetchUserPosts = async () => {
-    try {
-      const response = await postService.getUserPosts(userNameParam, 1, 30);
-      setPosts(response.data?.posts || []);
-    } catch (error) {
-      toast.error('Failed to load posts');
-    }
-  };
+      try {
+        const response = await postService.getUserPosts(userNameParam, 1, 30);
+        setPosts(response.data?.posts || []);
+      } catch (error) {
+        toast.error('Failed to load posts');
+      }
+    };
 
     const load = async () => {
       try {
@@ -71,13 +54,14 @@ export default function ProfilePage() {
     if (userNameParam) load();
   }, [userNameParam, isInitialized, user, getProfile, router]);
 
-  const isFollowing = useMemo(() => {
-  if (!profile || !user) return false;
-
-  return profile.followers?.some(
-    (follower) => follower.userId === user.id
-  );
-}, [profile, user]);
+  useEffect(() => {
+    if (!profile || !user) {
+      setIsFollowing(false);
+      return;
+    }
+    const isUserFollowing = profile.followers?.some((follower) => follower.userId === user.id);
+    setIsFollowing(Boolean(isUserFollowing));
+  }, [profile, user]);
 
 
   const handleFollow = async () => {
@@ -100,20 +84,6 @@ export default function ProfilePage() {
     }
   };
 
-  const navItems = useMemo(
-    () => [
-      { label: 'Home', href: '/home', icon: FiHome },
-      { label: 'Search', href: '/search', icon: FiSearch },
-      { label: 'Explore', href: '/explore', icon: FiCompass },
-      { label: 'Reels', href: '/reels', icon: FiPlay },
-      { label: 'Messages', href: '#', icon: FiMessageCircle },
-      { label: 'Notifications', href: '/notifications', icon: FiHeart },
-      { label: 'Create', href: '/post/new', icon: FiPlusSquare },
-      { label: 'Profile', href: user?.userName ? `/profile/${user.userName}` : '/profile', icon: FiUser, active: true },
-    ],
-    [user]
-  );
-
   if (!isInitialized) return <div className="p-8 text-center text-gray-400">Loading...</div>;
   if (isLoading) return <div className="p-8 text-center text-gray-400">Loading profile...</div>;
   if (!profile) return <div className="p-8 text-center text-gray-400">User not found</div>;
@@ -123,29 +93,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-white">
       <div className="max-w-7xl mx-auto flex">
-        <aside className="hidden lg:flex w-64 flex-col justify-between py-8 pr-8 border-r border-neutral-900 sticky top-0 h-screen">
-          <div className="space-y-8">
-            <div className="px-3 text-2xl font-semibold tracking-tight">Instagram</div>
-            <nav className="space-y-1">
-              {navItems.map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition hover:bg-neutral-900 ${
-                    item.active ? 'font-semibold' : 'text-gray-300'
-                  }`}
-                >
-                  <item.icon size={20} />
-                  <span>{item.label}</span>
-                </a>
-              ))}
-            </nav>
-          </div>
-          <button className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-gray-300 hover:bg-neutral-900 transition">
-            <FiMoreHorizontal size={20} />
-            More
-          </button>
-        </aside>
+        <Sidebar />
 
         <main className="flex-1 px-4 md:px-10 py-8">
           <section className="flex flex-col md:flex-row md:items-start gap-10 pb-8 border-b border-neutral-900">

@@ -176,18 +176,6 @@ export default function HomePage() {
   );
 }
 
-const navItems = [
-  { label: 'Home', href: '/home', icon: FiHome, active: true },
-  { label: 'Search', href: '/search', icon: FiSearch },
-  { label: 'Explore', href: '/explore', icon: FiCompass },
-  { label: 'Reels', href: '/reels', icon: FiPlay },
-  { label: 'Messages', href: '#', icon: FiMessageCircle },
-  { label: 'Notifications', href: '/notifications', icon: FiHeart },
-  { label: 'Create', href: '/post/new', icon: FiPlusSquare },
-  // resolved at runtime to avoid 404 on /profile
-  { label: 'Profile', href: null, icon: FiUser },
-];
-
 const storyFallback = [
   { id: '1', userName: 'hamzathe...', profilePic: 'https://images.unsplash.com/photo-1503023345310-bd7c1de61c7d?auto=format&fit=crop&w=200&q=80' },
   { id: '2', userName: '__abinf90', profilePic: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80' },
