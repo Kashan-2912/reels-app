@@ -2,19 +2,9 @@
 
 import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  FiHome,
-  FiSearch,
-  FiCompass,
-  FiPlay,
-  FiMessageCircle,
-  FiHeart,
-  FiPlusSquare,
-  FiUser,
-  FiMoreHorizontal,
-} from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import PostCard from '@/src/components/PostCard';
+import Sidebar from '@/src/components/Sidebar';
 import { feedService } from '@/src/services';
 import { useAuthStore } from '@/src/store/authStore';
 import { useFeedStore } from '@/src/store/feedStore';
@@ -107,32 +97,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-white">
       <div className="max-w-7xl mx-auto flex">
-        <aside className="hidden lg:flex w-64 flex-col justify-between py-8 pr-8 border-r border-neutral-900 sticky top-0 h-screen">
-          <div className="space-y-8">
-            <div className="px-3 text-2xl font-semibold tracking-tight">Instagram</div>
-            <nav className="space-y-1">
-              {navItems.map((item) => {
-                const resolvedHref = item.href ?? (user?.userName ? `/profile/${user.userName}` : '/profile');
-                return (
-                <a
-                  key={item.label}
-                  href={resolvedHref}
-                  className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition hover:bg-neutral-900 ${
-                    item.active ? 'font-semibold' : 'text-gray-300'
-                  }`}
-                >
-                  <item.icon size={20} />
-                  <span>{item.label}</span>
-                </a>
-                );
-              })}
-            </nav>
-          </div>
-          <button className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-gray-300 hover:bg-neutral-900 transition">
-            <FiMoreHorizontal size={20} />
-            More
-          </button>
-        </aside>
+        <Sidebar />
 
         <main className="flex-1 flex gap-10 px-4 md:px-8 py-8">
           <div className="flex-1 max-w-2xl mx-auto space-y-6">

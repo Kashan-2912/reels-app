@@ -83,7 +83,7 @@ export default function ProfilePage() {
   const handleFollow = async () => {
     try {
       await followUser(profile.userName);
-      setIsFollowing(true);
+      // setIsFollowing(true);
       toast.success('Following');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to follow');
@@ -93,7 +93,7 @@ export default function ProfilePage() {
   const handleUnfollow = async () => {
     try {
       await unfollowUser(profile.userName);
-      setIsFollowing(false);
+      // setIsFollowing(false);
       toast.success('Unfollowed');
     } catch (error) {
       toast.error('Failed to unfollow');
