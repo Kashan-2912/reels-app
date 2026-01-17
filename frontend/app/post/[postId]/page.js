@@ -10,7 +10,7 @@ import { postService } from '@/src/services';
 
 export default function PostPage() {
   const router = useRouter();
-  const { user, isInitialized } = useAuthStore();
+  const { user, isInitialized, initAuth } = useAuthStore();
   const params = useParams();
   const postId = params?.postId;
 
@@ -21,17 +21,25 @@ export default function PostPage() {
   const [newComment, setNewComment] = useState('');
 
   useEffect(() => {
+    initAuth();
+  }, [initAuth]);
+
+  useEffect(() => {
     if (!isInitialized) return;
     if (!user) {
       router.push('/login');
+      setIsLoading(false);
       return;
     }
 
-    if (postId) {
-      fetchPost();
-      fetchComments();
+    if (!postId) {
+      setIsLoading(false);
+      return;
     }
-  }, [user, isInitialized, postId, router]);
+
+    fetchPost();
+    fetchComments();
+  }, [isInitialized, user, postId, router]);
 
   const fetchPost = async () => {
     try {

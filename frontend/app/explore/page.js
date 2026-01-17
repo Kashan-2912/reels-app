@@ -10,13 +10,17 @@ import { exploreService, hashtagService, profileService } from '@/src/services';
 
 export default function ExplorePage() {
   const router = useRouter();
-  const { user, isInitialized } = useAuthStore();
+  const { user, isInitialized, initAuth } = useAuthStore();
   const [trendingPosts, setTrendingPosts] = useState([]);
   const [suggestedUsers, setSuggestedUsers] = useState([]);
   const [trendingHashtags, setTrendingHashtags] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [followingState, setFollowingState] = useState({});
+
+  useEffect(() => {
+    initAuth();
+  }, [initAuth]);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -26,7 +30,7 @@ export default function ExplorePage() {
     }
 
     fetchExploreData();
-  }, [user, isInitialized, router]);
+  }, [isInitialized, user, router]);
 
   const fetchExploreData = async () => {
     try {

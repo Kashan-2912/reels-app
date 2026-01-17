@@ -1,4 +1,5 @@
 import api from './api';
+export { uploadService } from './uploadService';
 
 // Auth Services
 export const authService = {

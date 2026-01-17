@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   FiHome,
   FiSearch,
@@ -15,10 +15,12 @@ import {
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/src/store/authStore';
 import { LogOut } from 'lucide-react';
+import CreatePostModal from '@/src/components/CreatePostModal';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -33,7 +35,7 @@ export default function Sidebar() {
       { label: 'Reels', href: '/reels', icon: FiPlay },
       { label: 'Messages', href: '#', icon: FiMessageCircle },
       { label: 'Notifications', href: '/notifications', icon: FiHeart },
-      { label: 'Create', href: '/post/new', icon: FiPlusSquare },
+      { label: 'Create', href: '#', icon: FiPlusSquare },
       { label: 'Profile', href: profileHref, icon: FiUser },
     ];
   }, [user]);
@@ -45,6 +47,19 @@ export default function Sidebar() {
         <nav className="space-y-1">
           {navItems.map((item) => {
             const isActive = item.href !== '#' && pathname.startsWith(item.href);
+            if (item.label === 'Create') {
+              return (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => setShowCreateModal(true)}
+                  className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-gray-300 transition hover:bg-neutral-900"
+                >
+                  <item.icon size={20} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            }
             return (
               <a
                 key={item.label}
@@ -64,6 +79,9 @@ export default function Sidebar() {
         <LogOut size={20} color='red' />
         Logout
       </button>
+      {showCreateModal && (
+        <CreatePostModal onClose={() => setShowCreateModal(false)} />
+      )}
     </aside>
   );
 }

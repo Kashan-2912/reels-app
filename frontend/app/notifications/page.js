@@ -11,10 +11,14 @@ import { notificationService } from '@/src/services';
 
 export default function NotificationsPage() {
   const router = useRouter();
-  const { user, isInitialized } = useAuthStore();
+  const { user, isInitialized, initAuth } = useAuthStore();
   const [notifications, setNotifications] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all'); // all, likes, comments, follows
+
+  useEffect(() => {
+    initAuth();
+  }, [initAuth]);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -24,7 +28,7 @@ export default function NotificationsPage() {
     }
 
     fetchNotifications();
-  }, [user, isInitialized, router]);
+  }, [isInitialized, user, router]);
 
   const fetchNotifications = async () => {
     try {

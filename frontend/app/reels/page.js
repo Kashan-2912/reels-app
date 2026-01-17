@@ -11,11 +11,15 @@ import { exploreService, postService } from '@/src/services';
 
 export default function ReelsPage() {
   const router = useRouter();
-  const { user, isInitialized } = useAuthStore();
+  const { user, isInitialized, initAuth } = useAuthStore();
   const [reels, setReels] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentReelIndex, setCurrentReelIndex] = useState(0);
   const containerRef = useRef(null);
+
+  useEffect(() => {
+    initAuth();
+  }, [initAuth]);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -25,7 +29,7 @@ export default function ReelsPage() {
     }
 
     fetchReels();
-  }, [user, isInitialized, router]);
+  }, [isInitialized, user, router]);
 
   const fetchReels = async () => {
     try {
