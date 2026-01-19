@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { FiUpload, FiX, FiArrowLeft, FiCheck } from 'react-icons/fi';
 import toast from 'react-hot-toast';
 import { postService, uploadService } from '@/src/services';
@@ -20,13 +21,18 @@ const FILTERS = {
   Slumber: { saturate: 1.2, brightness: 0.95 },
 };
 
-export default function CreatePostModal({ onClose }) {
+export default function CreatePostModal({ onClose, isOpen = true }) {
   const [stage, setStage] = useState('upload'); // upload, edit
   const [mediaFile, setMediaFile] = useState(null);
   const [mediaPreview, setMediaPreview] = useState(null);
   const [mediaType, setMediaType] = useState(null); // image or video
   const [isSharing, setIsSharing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Edit state
   const [editTab, setEditTab] = useState('filters'); // filters, adjustments
@@ -176,26 +182,24 @@ export default function CreatePostModal({ onClose }) {
     }
   };
 
-  if (showSuccess) {
-    return (
-      <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4">
-        <div className="w-full max-w-md bg-[#111] border border-neutral-800 rounded-2xl shadow-2xl p-8 text-center">
-          <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-r from-pink-500 to-red-500 flex items-center justify-center">
-            <FiCheck className="text-4xl text-white" />
-          </div>
-          <h2 className="text-2xl font-semibold text-white mb-2">
-            {mediaType === 'video' ? 'Reel posted!' : 'Post shared!'}
-          </h2>
-          <p className="text-gray-400">
-            Your {mediaType === 'video' ? 'reel' : 'post'} has been shared.
-          </p>
-        </div>
-      </div>
-    );
-  }
+  if (!isOpen || !isMounted) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center px-4">
+  const modalContent = showSuccess ? (
+    <div className="fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-[#111] border border-neutral-800 rounded-2xl shadow-2xl p-8 text-center">
+        <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-r from-pink-500 to-red-500 flex items-center justify-center">
+          <FiCheck className="text-4xl text-white" />
+        </div>
+        <h2 className="text-2xl font-semibold text-white mb-2">
+          {mediaType === 'video' ? 'Reel posted!' : 'Post shared!'}
+        </h2>
+        <p className="text-gray-400">
+          Your {mediaType === 'video' ? 'reel' : 'post'} has been shared.
+        </p>
+      </div>
+    </div>
+  ) : (
+    <div className="fixed inset-0 bg-black/70 z-[9999] flex items-center justify-center px-4">
       <div className="w-full max-w-4xl bg-[#111] border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden">
         {stage === 'upload' ? (
           <UploadStage
@@ -239,6 +243,8 @@ export default function CreatePostModal({ onClose }) {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
 
 function UploadStage({ onFileSelect, onDragDrop, onClose }) {
@@ -281,6 +287,7 @@ function UploadStage({ onFileSelect, onDragDrop, onClose }) {
             onChange={onFileSelect}
             className="hidden"
             id="media-input"
+            multiple={true}
           />
           <label
             htmlFor="media-input"
