@@ -345,10 +345,18 @@ function PostGrid({ posts, onOpen }) {
         const photos = Array.isArray(post?.photos) ? post.photos : [];
         const currentIndex = currentIndexByPost[postId] || 0;
         return (
-          <button
+          <div
             key={postId}
             onClick={() => onOpen(postId)}
-            className="relative aspect-square bg-neutral-900 overflow-hidden group"
+            className="relative aspect-square bg-neutral-900 overflow-hidden group cursor-pointer"
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onOpen(postId);
+              }
+            }}
           >
             {photos[currentIndex] ? (
               <img src={photos[currentIndex]} alt="Post" className="h-full w-full object-cover group-hover:scale-105 transition" />
@@ -393,7 +401,7 @@ function PostGrid({ posts, onOpen }) {
                 </button>
               </>
             )}
-          </button>
+          </div>
         );
       })}
     </div>
