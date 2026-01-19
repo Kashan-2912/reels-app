@@ -148,24 +148,16 @@ export default function CreatePostModal({ onClose, isOpen = true }) {
 
   const getFilterStyle = () => {
     const filter = FILTERS[currentFilter] || {};
-    const styles = {
-      filter: [
-        filter.hueRotate ? `hue-rotate(${filter.hueRotate}deg)` : '',
-        filter.saturate ? `saturate(${filter.saturate})` : '',
-        filter.sepia ? `sepia(${filter.sepia})` : '',
-        filter.contrast ? `contrast(${filter.contrast})` : '',
-        filter.brightness ? `brightness(${filter.brightness})` : '',
-        filter.grayscale ? `grayscale(${filter.grayscale})` : '',
-      ]
-        .filter(Boolean)
-        .join(' '),
-      ...getAdjustmentStyles(),
-    };
-    return styles;
-  };
+    const filterParts = [
+      filter.hueRotate ? `hue-rotate(${filter.hueRotate}deg)` : '',
+      filter.saturate ? `saturate(${filter.saturate})` : '',
+      filter.sepia ? `sepia(${filter.sepia})` : '',
+      filter.contrast ? `contrast(${filter.contrast})` : '',
+      filter.brightness ? `brightness(${filter.brightness})` : '',
+      filter.grayscale ? `grayscale(${filter.grayscale})` : '',
+    ].filter(Boolean);
 
-  const getAdjustmentStyles = () => {
-    const filterParts = [];
+    // Add adjustment styles
     if (adjustments.brightness !== 0)
       filterParts.push(`brightness(${1 + adjustments.brightness / 100})`);
     if (adjustments.contrast !== 0)
