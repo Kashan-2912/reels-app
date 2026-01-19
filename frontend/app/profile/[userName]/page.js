@@ -317,6 +317,17 @@ function TabButton({ icon: Icon, label, active, onClick }) {
 }
 
 function PostGrid({ posts, onOpen }) {
+  const [currentIndexByPost, setCurrentIndexByPost] = useState({});
+
+  useEffect(() => {
+    const next = {};
+    (posts || []).forEach((post) => {
+      const postId = post.id || post._id;
+      if (postId) next[postId] = 0;
+    });
+    setCurrentIndexByPost(next);
+  }, [posts]);
+
   if (!posts || posts.length === 0) {
     return (
       <EmptyState
@@ -331,18 +342,56 @@ function PostGrid({ posts, onOpen }) {
     <div className="grid grid-cols-3 gap-1 md:gap-2 mt-6">
       {posts.map((post) => {
         const postId = post.id || post._id;
+        const photos = Array.isArray(post?.photos) ? post.photos : [];
+        const currentIndex = currentIndexByPost[postId] || 0;
         return (
           <button
             key={postId}
             onClick={() => onOpen(postId)}
             className="relative aspect-square bg-neutral-900 overflow-hidden group"
           >
-            {post.photos?.[0] ? (
-              <img src={post.photos[0]} alt="Post" className="h-full w-full object-cover group-hover:scale-105 transition" />
+            {photos[currentIndex] ? (
+              <img src={photos[currentIndex]} alt="Post" className="h-full w-full object-cover group-hover:scale-105 transition" />
             ) : post.video ? (
               <video src={post.video} className="h-full w-full object-cover" />
             ) : (
               <div className="h-full w-full flex items-center justify-center text-gray-500">No media</div>
+            )}
+
+            {photos.length > 1 && (
+              <>
+                <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded z-10">
+                  {currentIndex + 1} / {photos.length}
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentIndexByPost((prev) => ({
+                      ...prev,
+                      [postId]: (currentIndex - 1 + photos.length) % photos.length,
+                    }));
+                  }}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 text-white w-7 h-7 rounded-full flex items-center justify-center z-10"
+                  aria-label="Previous image"
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentIndexByPost((prev) => ({
+                      ...prev,
+                      [postId]: (currentIndex + 1) % photos.length,
+                    }));
+                  }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 text-white w-7 h-7 rounded-full flex items-center justify-center z-10"
+                  aria-label="Next image"
+                >
+                  ›
+                </button>
+              </>
             )}
           </button>
         );

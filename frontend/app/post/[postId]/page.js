@@ -19,6 +19,13 @@ export default function PostPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAddingComment, setIsAddingComment] = useState(false);
   const [newComment, setNewComment] = useState('');
+  const photos = Array.isArray(post?.photos) ? post.photos : [];
+  const hasMultiplePhotos = photos.length > 1;
+  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+
+  useEffect(() => {
+    setCurrentPhotoIndex(0);
+  }, [post?.id, post?._id]);
 
   useEffect(() => {
     initAuth();
@@ -149,12 +156,40 @@ export default function PostPage() {
       <div className="grid grid-cols-3 gap-6 p-6">
         {/* Post Image */}
         <div className="col-span-2">
-          {post.photos && post.photos[0] ? (
-            <img
-              src={post.photos[0]}
-              alt="Post"
-              className="w-full rounded-lg bg-gray-200 dark:bg-gray-800"
-            />
+          {photos.length > 0 ? (
+            <div className="relative bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden">
+              <img
+                src={photos[currentPhotoIndex]}
+                alt={`Post image ${currentPhotoIndex + 1}`}
+                className="w-full"
+              />
+
+              {hasMultiplePhotos && (
+                <>
+                  <div className="absolute top-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-sm">
+                    {currentPhotoIndex + 1} / {photos.length}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCurrentPhotoIndex((prev) => (prev - 1 + photos.length) % photos.length)
+                    }
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/60 text-white w-9 h-9 rounded-full flex items-center justify-center"
+                    aria-label="Previous image"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPhotoIndex((prev) => (prev + 1) % photos.length)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/60 text-white w-9 h-9 rounded-full flex items-center justify-center"
+                    aria-label="Next image"
+                  >
+                    ›
+                  </button>
+                </>
+              )}
+            </div>
           ) : post.video ? (
             <video
               src={post.video}

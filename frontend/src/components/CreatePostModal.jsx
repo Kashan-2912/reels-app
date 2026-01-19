@@ -23,8 +23,9 @@ const FILTERS = {
 
 export default function CreatePostModal({ onClose, isOpen = true }) {
   const [stage, setStage] = useState('upload'); // upload, edit
-  const [mediaFile, setMediaFile] = useState(null);
-  const [mediaPreview, setMediaPreview] = useState(null);
+  const [mediaFiles, setMediaFiles] = useState([]); // array of files for multiple images
+  const [mediaPreviews, setMediaPreviews] = useState([]); // array of previews
+  const [currentPreviewIndex, setCurrentPreviewIndex] = useState(0);
   const [mediaType, setMediaType] = useState(null); // image or video
   const [isSharing, setIsSharing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -48,27 +49,57 @@ export default function CreatePostModal({ onClose, isOpen = true }) {
   const [postCaption, setPostCaption] = useState('');
 
   const handleFileSelect = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-    const isVideo = file.type.startsWith('video/');
-    const isImage = file.type.startsWith('image/');
+    const fileArray = Array.from(files);
+    const firstFile = fileArray[0];
+    const isVideo = firstFile.type.startsWith('video/');
+    const isImage = firstFile.type.startsWith('image/');
 
     if (!isVideo && !isImage) {
       toast.error('Please select an image or video');
       return;
     }
 
-    setMediaFile(file);
-    setMediaType(isVideo ? 'video' : 'image');
+    // For video, only allow single file
+    if (isVideo) {
+      setMediaFiles([firstFile]);
+      setMediaType('video');
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setMediaPreviews([ev.target?.result]);
+      };
+      reader.readAsDataURL(firstFile);
+      setStage('edit');
+      return;
+    }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      setMediaPreview(e.target?.result);
-    };
-    reader.readAsDataURL(file);
+    // For images, allow multiple
+    const imageFiles = fileArray.filter((f) => f.type.startsWith('image/'));
+    if (imageFiles.length === 0) {
+      toast.error('Please select valid images');
+      return;
+    }
 
-    setStage('edit');
+    setMediaFiles(imageFiles);
+    setMediaType('image');
+
+    // Generate previews for all images
+    const previewPromises = imageFiles.map(
+      (file) =>
+        new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (ev) => resolve(ev.target?.result);
+          reader.readAsDataURL(file);
+        })
+    );
+
+    Promise.all(previewPromises).then((previews) => {
+      setMediaPreviews(previews);
+      setCurrentPreviewIndex(0);
+      setStage('edit');
+    });
   };
 
   const handleDragDrop = (e) => {
@@ -136,7 +167,7 @@ export default function CreatePostModal({ onClose, isOpen = true }) {
   };
 
   const handleShare = async () => {
-    if (!mediaFile) {
+    if (mediaFiles.length === 0) {
       toast.error('Please select media');
       return;
     }
@@ -149,23 +180,24 @@ export default function CreatePostModal({ onClose, isOpen = true }) {
     try {
       setIsSharing(true);
 
-      let mediaUrl = null;
+      let payload;
       if (mediaType === 'video') {
-        const uploaded = await uploadService.uploadVideo(mediaFile);
-        mediaUrl = uploaded?.url;
+        const uploaded = await uploadService.uploadVideo(mediaFiles[0]);
+        if (!uploaded?.url) {
+          toast.error('Failed to upload video');
+          return;
+        }
+        payload = { description: postCaption.trim(), video: uploaded.url };
       } else {
-        const uploadedImages = await uploadService.uploadImages(mediaFile);
-        mediaUrl = uploadedImages?.[0]?.url;
+        // Upload all images
+        const uploadedImages = await uploadService.uploadImages(mediaFiles);
+        const photoUrls = uploadedImages.map((img) => img.url).filter(Boolean);
+        if (photoUrls.length === 0) {
+          toast.error('Failed to upload images');
+          return;
+        }
+        payload = { description: postCaption.trim(), photos: photoUrls };
       }
-
-      if (!mediaUrl) {
-        toast.error('Failed to upload media');
-        return;
-      }
-
-      const payload = mediaType === 'video'
-        ? { description: postCaption.trim(), video: mediaUrl }
-        : { description: postCaption.trim(), photos: [mediaUrl] };
 
       await postService.createPost(payload);
       setShowSuccess(true);
@@ -209,7 +241,9 @@ export default function CreatePostModal({ onClose, isOpen = true }) {
           />
         ) : (
           <EditStage
-            mediaPreview={mediaPreview}
+            mediaPreviews={mediaPreviews}
+            currentPreviewIndex={currentPreviewIndex}
+            setCurrentPreviewIndex={setCurrentPreviewIndex}
             mediaType={mediaType}
             editTab={editTab}
             setEditTab={setEditTab}
@@ -222,8 +256,9 @@ export default function CreatePostModal({ onClose, isOpen = true }) {
             setPostCaption={setPostCaption}
             onBack={() => {
               setStage('upload');
-              setMediaFile(null);
-              setMediaPreview(null);
+              setMediaFiles([]);
+              setMediaPreviews([]);
+              setCurrentPreviewIndex(0);
               setMediaType(null);
               setCurrentFilter('Original');
               setAdjustments({
@@ -302,7 +337,9 @@ function UploadStage({ onFileSelect, onDragDrop, onClose }) {
 }
 
 function EditStage({
-  mediaPreview,
+  mediaPreviews,
+  currentPreviewIndex,
+  setCurrentPreviewIndex,
   mediaType,
   editTab,
   setEditTab,
@@ -317,6 +354,8 @@ function EditStage({
   onShare,
   isSharing,
 }) {
+  const hasMultiplePreviews = mediaPreviews.length > 1;
+
   return (
     <div>
       <div className="flex items-center justify-between p-4 border-b border-neutral-800">
@@ -333,20 +372,61 @@ function EditStage({
 
       <div className="grid grid-cols-1 md:grid-cols-2">
         {/* Media Preview */}
-        <div className="bg-black p-4 flex items-center justify-center min-h-96">
+        <div className="bg-black p-4 flex items-center justify-center min-h-96 relative">
           {mediaType === 'video' ? (
             <video
-              src={mediaPreview}
+              src={mediaPreviews[0]}
               controls
               className="w-full h-full object-contain max-h-96"
             />
           ) : (
             <img
-              src={mediaPreview}
-              alt="Preview"
+              src={mediaPreviews[currentPreviewIndex]}
+              alt={`Preview ${currentPreviewIndex + 1}`}
               style={getFilterStyle()}
               className="w-full h-full object-contain max-h-96"
             />
+          )}
+
+          {/* Navigation for multiple images */}
+          {mediaType === 'image' && hasMultiplePreviews && (
+            <>
+              <div className="absolute top-6 right-6 bg-black/70 text-white px-2 py-1 rounded text-sm">
+                {currentPreviewIndex + 1} / {mediaPreviews.length}
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setCurrentPreviewIndex(
+                    (prev) => (prev - 1 + mediaPreviews.length) % mediaPreviews.length
+                  )
+                }
+                className="absolute left-6 top-1/2 -translate-y-1/2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center"
+                aria-label="Previous image"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setCurrentPreviewIndex((prev) => (prev + 1) % mediaPreviews.length)
+                }
+                className="absolute right-6 top-1/2 -translate-y-1/2 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center"
+                aria-label="Next image"
+              >
+                ›
+              </button>
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1">
+                {mediaPreviews.map((_, index) => (
+                  <span
+                    key={index}
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      index === currentPreviewIndex ? 'bg-white' : 'bg-white/40'
+                    }`}
+                  />
+                ))}
+              </div>
+            </>
           )}
         </div>
 
