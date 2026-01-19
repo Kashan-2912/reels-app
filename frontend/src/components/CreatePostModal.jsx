@@ -37,16 +37,41 @@ export default function CreatePostModal({ onClose, isOpen = true }) {
 
   // Edit state
   const [editTab, setEditTab] = useState('filters'); // filters, adjustments
-  const [currentFilter, setCurrentFilter] = useState('Original');
-  const [adjustments, setAdjustments] = useState({
+  // Per-image filters and adjustments (keyed by index)
+  const [filtersPerImage, setFiltersPerImage] = useState({});
+  const [adjustmentsPerImage, setAdjustmentsPerImage] = useState({});
+  const [postCaption, setPostCaption] = useState('');
+
+  const defaultAdjustments = {
     brightness: 0,
     contrast: 0,
     fade: 0,
     saturation: 0,
     temperature: 0,
     vignette: 0,
-  });
-  const [postCaption, setPostCaption] = useState('');
+  };
+
+  // Get current image's filter and adjustments
+  const currentFilter = filtersPerImage[currentPreviewIndex] || 'Original';
+  const adjustments = adjustmentsPerImage[currentPreviewIndex] || defaultAdjustments;
+
+  const setCurrentFilter = (filterName) => {
+    setFiltersPerImage((prev) => ({
+      ...prev,
+      [currentPreviewIndex]: filterName,
+    }));
+  };
+
+  const setAdjustments = (updater) => {
+    setAdjustmentsPerImage((prev) => {
+      const currentAdj = prev[currentPreviewIndex] || defaultAdjustments;
+      const newAdj = typeof updater === 'function' ? updater(currentAdj) : updater;
+      return {
+        ...prev,
+        [currentPreviewIndex]: newAdj,
+      };
+    });
+  };
 
   const handleFileSelect = (e) => {
     const files = e.target.files;
@@ -166,6 +191,57 @@ export default function CreatePostModal({ onClose, isOpen = true }) {
     };
   };
 
+  // Helper to get filter style for a specific image index
+  const getFilterStyleForIndex = (index) => {
+    const filterName = filtersPerImage[index] || 'Original';
+    const adj = adjustmentsPerImage[index] || defaultAdjustments;
+    const filter = FILTERS[filterName] || {};
+
+    const filterParts = [
+      filter.hueRotate ? `hue-rotate(${filter.hueRotate}deg)` : '',
+      filter.saturate ? `saturate(${filter.saturate})` : '',
+      filter.sepia ? `sepia(${filter.sepia})` : '',
+      filter.contrast ? `contrast(${filter.contrast})` : '',
+      filter.brightness ? `brightness(${filter.brightness})` : '',
+      filter.grayscale ? `grayscale(${filter.grayscale})` : '',
+    ].filter(Boolean);
+
+    // Add adjustments
+    if (adj.brightness !== 0) filterParts.push(`brightness(${1 + adj.brightness / 100})`);
+    if (adj.contrast !== 0) filterParts.push(`contrast(${1 + adj.contrast / 100})`);
+    if (adj.fade !== 0) filterParts.push(`opacity(${1 - adj.fade / 100})`);
+    if (adj.saturation !== 0) filterParts.push(`saturate(${1 + adj.saturation / 100})`);
+    if (adj.temperature !== 0) {
+      const temp = adj.temperature;
+      filterParts.push(temp > 0 ? `sepia(${Math.min(temp / 100, 1)})` : `hue-rotate(${temp}deg)`);
+    }
+
+    return filterParts.join(' ') || 'none';
+  };
+
+  // Apply filters to image using canvas and return as Blob
+  const applyFiltersToImage = async (imageDataUrl, filterStyle) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+
+        // Apply filter
+        ctx.filter = filterStyle;
+        ctx.drawImage(img, 0, 0);
+
+        canvas.toBlob((blob) => {
+          resolve(blob);
+        }, 'image/jpeg', 0.95);
+      };
+      img.src = imageDataUrl;
+    });
+  };
+
   const handleShare = async () => {
     if (mediaFiles.length === 0) {
       toast.error('Please select media');
@@ -189,8 +265,22 @@ export default function CreatePostModal({ onClose, isOpen = true }) {
         }
         payload = { description: postCaption.trim(), video: uploaded.url };
       } else {
-        // Upload all images
-        const uploadedImages = await uploadService.uploadImages(mediaFiles);
+        // Apply filters to images before uploading
+        const processedFiles = await Promise.all(
+          mediaPreviews.map(async (preview, index) => {
+            const filterStyle = getFilterStyleForIndex(index);
+            if (filterStyle === 'none') {
+              // No filters, use original file
+              return mediaFiles[index];
+            }
+            // Apply filters using canvas
+            const blob = await applyFiltersToImage(preview, filterStyle);
+            return new File([blob], mediaFiles[index].name, { type: 'image/jpeg' });
+          })
+        );
+
+        // Upload all processed images
+        const uploadedImages = await uploadService.uploadImages(processedFiles);
         const photoUrls = uploadedImages.map((img) => img.url).filter(Boolean);
         if (photoUrls.length === 0) {
           toast.error('Failed to upload images');
@@ -260,15 +350,8 @@ export default function CreatePostModal({ onClose, isOpen = true }) {
               setMediaPreviews([]);
               setCurrentPreviewIndex(0);
               setMediaType(null);
-              setCurrentFilter('Original');
-              setAdjustments({
-                brightness: 0,
-                contrast: 0,
-                fade: 0,
-                saturation: 0,
-                temperature: 0,
-                vignette: 0,
-              });
+              setFiltersPerImage({});
+              setAdjustmentsPerImage({});
               setPostCaption('');
             }}
             onShare={handleShare}
